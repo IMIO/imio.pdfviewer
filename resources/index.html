@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pat-pdf-viewer demo</title>
+    <!-- Demo only. The viewer uses the Bootstrap classes and icons that Plone supplies. -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script src="/imio.pdfviewer.min.js"></script>
+  </head>
+  <body>
+    <main class="container py-4">
+      <h1 class="h3">pat-pdf-viewer</h1>
+
+      <h2 class="h5 mt-4">URL from a child link</h2>
+      <div class="pat-pdf-viewer">
+        <a href="/sample.pdf">Télécharger le document</a>
+      </div>
+
+      <h2 class="h5 mt-4">URL from the pattern option</h2>
+      <div class="pat-pdf-viewer" data-pat-pdf-viewer='{"url": "/sample.pdf"}'></div>
+    </main>
+  </body>
+</html>

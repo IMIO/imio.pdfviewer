@@ -1,0 +1,29 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      lang="en"
+      metal:use-macro="context/@@main_template/macros/master"
+      xml:lang="en"
+>
+  <body>
+
+    <!-- Demo only. The viewer uses the Bootstrap Icons font. Barceloneta does
+         not load it, plonetheme.deliberations does. -->
+    <metal:style fill-slot="style_slot">
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+            rel="stylesheet"
+      />
+    </metal:style>
+
+    <metal:content-core fill-slot="content-core">
+      <metal:block define-macro="content-core">
+        <div class="pat-pdf-viewer">
+          <a tal:attributes="
+               href request/form/url|nothing;
+             ">PDF</a>
+        </div>
+      </metal:block>
+    </metal:content-core>
+
+  </body>
+</html>

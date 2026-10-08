@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<registry>
+
+  <records interface="plone.base.interfaces.IBundleRegistry"
+           prefix="plone.bundles/imio.pdfviewer"
+  >
+    <value key="enabled">True</value>
+    <value key="jscompilation">++plone++imio.pdfviewer/bundles/imio.pdfviewer-remote.min.js</value>
+  </records>
+
+  <!-- Development: enable this record and disable the one above to load the
+       bundle from `npm start` (webpack-dev-server on port 3001). -->
+  <records interface="plone.base.interfaces.IBundleRegistry"
+           prefix="plone.bundles/imio.pdfviewer-devserver"
+  >
+    <value key="enabled">False</value>
+    <value key="jscompilation">http://localhost:3001/imio.pdfviewer-remote.min.js</value>
+  </records>
+
+</registry>

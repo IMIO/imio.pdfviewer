@@ -1,0 +1,1 @@
+Add the `pat-pdf-viewer` pattern: the PDF viewer of plonemeeting.portal.core, moved to React 19 and shipped as a Module Federation bundle. The pdf.js worker now loads from the bundle, not from cdnjs.cloudflare.com. @duchenean

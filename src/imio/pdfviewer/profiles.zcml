@@ -1,0 +1,28 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="imio.pdfviewer"
+    >
+
+  <genericsetup:registerProfile
+      name="default"
+      title="PDF viewer (imio.pdfviewer)"
+      description="Registers the pat-pdf-viewer JavaScript bundle."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      directory="profiles/default"
+      />
+
+  <genericsetup:registerProfile
+      name="uninstall"
+      title="PDF viewer (imio.pdfviewer): uninstall"
+      description="Removes the pat-pdf-viewer JavaScript bundle."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      directory="profiles/uninstall"
+      />
+
+  <utility
+      factory=".setuphandlers.HiddenProfiles"
+      name="imio.pdfviewer"
+      />
+
+</configure>

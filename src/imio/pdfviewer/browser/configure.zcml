@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="imio.pdfviewer"
+    >
+
+  <!-- The JavaScript bundle: ++plone++imio.pdfviewer/bundles/... -->
+  <plone:static
+      directory="static"
+      name="imio.pdfviewer"
+      type="plone"
+      />
+
+  <browser:page
+      name="pdfviewer-demo"
+      for="*"
+      template="pdfviewer-demo.pt"
+      permission="zope2.View"
+      layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"
+      />
+
+</configure>
