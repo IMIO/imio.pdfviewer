@@ -353,7 +353,6 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                     page={page}
                     numPages={numPages}
                     zoom={zoom}
-                    scale={scale}
                     canZoomIn={scale < MAX_SCALE}
                     canZoomOut={scale > MIN_SCALE}
                     isFullscreen={fullscreen.mode !== null}

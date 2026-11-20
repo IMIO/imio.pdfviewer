@@ -127,8 +127,7 @@
         }
 
         // The base rule comes later in this file: a longer selector wins.
-        .pdf-viewer-toolbar .pdf-viewer-page-count,
-        .pdf-viewer-toolbar .pdf-viewer-zoom-level {
+        .pdf-viewer-toolbar .pdf-viewer-page-count {
             min-width: 3rem;
         }
     }
@@ -141,10 +140,6 @@
 
         .pdf-viewer-toolbar .pdf-viewer-button {
             min-width: 2.375rem;
-        }
-
-        .pdf-viewer-toolbar .pdf-viewer-zoom-level {
-            min-width: 2.75rem;
         }
     }
 
@@ -195,8 +190,7 @@
         }
     }
 
-    .pdf-viewer-page-count,
-    .pdf-viewer-zoom-level {
+    .pdf-viewer-page-count {
         min-width: 3.5rem;
         text-align: center;
         font-variant-numeric: tabular-nums;

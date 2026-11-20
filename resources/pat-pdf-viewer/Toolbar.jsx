@@ -20,7 +20,6 @@ const Toolbar = ({
     page,
     numPages,
     zoom,
-    scale,
     canZoomIn,
     canZoomOut,
     isFullscreen,
@@ -106,7 +105,6 @@ const Toolbar = ({
                             onClick={actions.zoomOut}
                             disabled={!canZoomOut}
                         />
-                        <span className="pdf-viewer-zoom-level">{Math.round(scale * 100)}%</span>
                         <Button
                             label={t("Zoom in")}
                             icon="plus-lg"
