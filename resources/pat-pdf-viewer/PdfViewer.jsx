@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -22,18 +22,27 @@ pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
 
 // Space in pixels above a page after a jump to that page.
 const SCROLL_MARGIN = 8;
+// The viewer reads the page sizes in groups of this number of pages.
+const SIZE_BATCH = 50;
 
 const identity = (text) => text;
 
-// Size of each page at scale 1, without rotation.
-const readSizes = (pdf) =>
-    Promise.all(
-        Array.from({ length: pdf.numPages }, async (_, index) => {
-            const page = await pdf.getPage(index + 1);
-            const { width, height } = page.getViewport({ scale: 1, rotation: 0 });
-            return { width, height, rotate: page.rotate };
-        }),
-    );
+// Size of a page at scale 1, without rotation.
+const readSize = async (pdf, number) => {
+    const page = await pdf.getPage(number);
+    const { width, height } = page.getViewport({ scale: 1, rotation: 0 });
+    return { width, height, rotate: page.rotate };
+};
+
+// The page numbers in groups: page 1 alone, then groups of SIZE_BATCH pages.
+const sizeGroups = (numPages) => {
+    const groups = [[1]];
+    for (let first = 2; first <= numPages; first += SIZE_BATCH) {
+        const count = Math.min(SIZE_BATCH, numPages - first + 1);
+        groups.push(Array.from({ length: count }, (_, index) => first + index));
+    }
+    return groups;
+};
 
 const ErrorMessage = ({ file, t }) => (
     <p className="pdf-viewer-error" role="alert">
@@ -50,7 +59,8 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     // The viewer keeps this place when the size of the pages changes.
     const anchorRef = useRef(null);
     const frameRef = useRef(0);
-    const [sizes, setSizes] = useState(null);
+    // The open document and the page sizes that the viewer read, by page index.
+    const [doc, setDoc] = useState({ pdf: null, sizes: [] });
     const [failed, setFailed] = useState(false);
     const [page, setPage] = useState(1);
     const [rotation, setRotation] = useState(0);
@@ -58,7 +68,16 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const box = useBoxSize(viewportRef);
     const fullscreen = useFullscreen(rootRef);
 
-    const numPages = sizes?.length ?? 0;
+    const { pdf } = doc;
+    const numPages = pdf?.numPages ?? 0;
+    // A page with no size yet gets the size of the first page that the viewer read.
+    const sizes = useMemo(() => {
+        const estimate = doc.sizes.find(Boolean);
+        return estimate
+            ? Array.from({ length: numPages }, (_, index) => doc.sizes[index] ?? estimate)
+            : null;
+    }, [doc, numPages]);
+    const ready = sizes !== null && !failed;
     const single = display === "single";
     // The single mode fits the current page. The continuous mode fits all the pages.
     const fitSizes = single ? sizes?.slice(page - 1, page) : sizes;
@@ -69,7 +88,62 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const pageElement = (number) =>
         viewportRef.current?.querySelector(`.pdf-viewer-page[data-page-number="${number}"]`);
 
-    const onLoadSuccess = useCallback(async (pdf) => setSizes(await readSizes(pdf)), []);
+    const onLoadSuccess = useCallback(
+        (next) =>
+            setDoc((current) => (current.pdf === next ? current : { pdf: next, sizes: [] })),
+        [],
+    );
+
+    // Keep the sizes of the pages `numbers` of the document `from`.
+    const addSizes = (from, numbers, read) =>
+        setDoc((current) => {
+            if (current.pdf !== from) {
+                return current;
+            }
+            const next = [...current.sizes];
+            numbers.forEach((number, index) => {
+                next[number - 1] = read[index];
+            });
+            return { pdf: from, sizes: next };
+        });
+
+    // In continuous mode, read all the page sizes in page order. Page 1 shows
+    // before the viewer knows the other sizes.
+    useEffect(() => {
+        if (!pdf || single) {
+            return undefined;
+        }
+        let active = true;
+        const load = async () => {
+            for (const numbers of sizeGroups(pdf.numPages)) {
+                const read = await Promise.all(numbers.map((number) => readSize(pdf, number)));
+                if (!active) {
+                    return;
+                }
+                addSizes(pdf, numbers, read);
+            }
+        };
+        load().catch(() => active && setFailed(true));
+        return () => {
+            active = false;
+        };
+    }, [pdf, single]);
+
+    // In single mode, read the size of the current page only.
+    const pageKnown = Boolean(doc.sizes[page - 1]);
+    useEffect(() => {
+        if (!pdf || !single || pageKnown) {
+            return undefined;
+        }
+        let active = true;
+        readSize(pdf, page).then(
+            (size) => active && addSizes(pdf, [page], [size]),
+            () => active && setFailed(true),
+        );
+        return () => {
+            active = false;
+        };
+    }, [pdf, single, page, pageKnown]);
 
     // The current page is the page at one third of the viewport height.
     const trackScroll = () => {
@@ -102,14 +176,14 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
 
     useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
 
-    // After a change of scale or rotation, show the same place again.
+    // After a change of scale, rotation or page sizes, show the same place again.
     useLayoutEffect(() => {
         const anchor = anchorRef.current;
         const el = anchor && pageElement(anchor.page);
         if (el) {
             viewportRef.current.scrollTop = el.offsetTop + anchor.offset * el.offsetHeight;
         }
-    }, [scale, rotation]);
+    }, [scale, rotation, sizes]);
 
     const goToPage = (number) => {
         const target = Math.min(Math.max(number, 1), numPages);
@@ -190,7 +264,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     // The keys work when the focus is in the viewer. In continuous mode, the
     // browser scrolls with the arrows and the page keys.
     const onKeyDown = (event) => {
-        if (event.ctrlKey || event.metaKey || event.altKey || !numPages) {
+        if (event.ctrlKey || event.metaKey || event.altKey || !ready) {
             return;
         }
         const keys = {
@@ -224,7 +298,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             aria-label={t("PDF document")}
             onKeyDown={onKeyDown}
         >
-            {numPages > 0 && !failed && (
+            {ready && (
                 <Toolbar
                     t={t}
                     file={file}
@@ -264,15 +338,19 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                     externalLinkTarget="_blank"
                     externalLinkRel="noopener noreferrer"
                 >
-                    {sizes && (
-                        <Pages
-                            viewportRef={viewportRef}
-                            sizes={sizes}
-                            display={display}
-                            page={page}
-                            scale={scale}
-                            rotation={rotation}
-                        />
+                    {failed ? (
+                        <ErrorMessage file={file} t={t} />
+                    ) : (
+                        sizes && (
+                            <Pages
+                                viewportRef={viewportRef}
+                                sizes={sizes}
+                                display={display}
+                                page={page}
+                                scale={scale}
+                                rotation={rotation}
+                            />
+                        )
                     )}
                 </Document>
             </div>
