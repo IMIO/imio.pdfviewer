@@ -23,16 +23,20 @@ describe("pat-pdf-viewer", () => {
     });
 
     it("loads pdf.js from the site only", () => {
-        const cdn = cy.spy().as("cdn");
-        cy.intercept({ hostname: /cdnjs|unpkg/ }, (request) => {
-            cdn(request.url);
-            request.destroy();
+        // Record and stop each request to another host than the site.
+        const site = new URL(Cypress.config("baseUrl")).host;
+        const offsite = cy.spy().as("offsite");
+        cy.intercept({ url: /.*/ }, (request) => {
+            if (new URL(request.url).host !== site) {
+                offsite(request.url);
+                request.destroy();
+            }
         });
         cy.intercept("**/++plone++imio.pdfviewer/bundles/pdf.worker.min.*.mjs").as("worker");
         cy.visitViewer();
         cy.wait("@worker");
         cy.get(".pdf-viewer canvas").should("be.visible");
-        cy.get("@cdn").should("not.have.been.called");
+        cy.get("@offsite").should("not.have.been.called");
     });
 
     it("renders the text of the pages", () => {
@@ -154,12 +158,22 @@ describe("pat-pdf-viewer", () => {
         cy.visitViewer();
         button("Zoom in").click();
         button("Fit to width").should("exist");
-        const finger = [{ identifier: 1, clientX: 300, clientY: 300 }];
-        viewport()
-            .trigger("touchstart", { touches: finger })
-            .trigger("touchend", { touches: [], changedTouches: finger })
-            .trigger("touchstart", { touches: finger })
-            .trigger("touchend", { touches: [], changedTouches: finger });
+        // Send the two taps in one callback: a slow runner cannot put more
+        // than the double tap delay between them. The taps are at the same place.
+        viewport().then(($viewport) => {
+            const el = $viewport[0];
+            const { Event } = el.ownerDocument.defaultView;
+            const finger = { identifier: 1, clientX: 300, clientY: 300 };
+            const touch = (type, touches) => {
+                const event = new Event(type, { bubbles: true, cancelable: true });
+                Object.assign(event, { touches, changedTouches: [finger] });
+                el.dispatchEvent(event);
+            };
+            touch("touchstart", [finger]);
+            touch("touchend", []);
+            touch("touchstart", [finger]);
+            touch("touchend", []);
+        });
         button("Fit to page").should("exist");
     });
 
