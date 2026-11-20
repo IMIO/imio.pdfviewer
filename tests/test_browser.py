@@ -20,7 +20,7 @@ class TestDemoView:
         response = anon.get("/@@pdfviewer-demo", params={"url": PDF_URL})
 
         assert response.status_code == 200
-        assert '<div class="pat-pdf-viewer">' in response.text
+        assert 'class="pat-pdf-viewer"' in response.text
         assert f'href="{PDF_URL}"' in response.text
 
     def test_loads_the_bundle(self, anon):

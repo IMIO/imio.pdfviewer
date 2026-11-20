@@ -1,232 +1,409 @@
-import { useState, useRef, useEffect } from "react";
-import { usePdf } from "@mikecousins/react-pdf";
-import { WORKER_SRC, SPINNER_URL } from "./assets";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Document, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { PDFJS_OPTIONS, SPINNER_URL, WORKER_SRC } from "./assets";
+import Icon from "./Icon";
+import Pages from "./Pages";
+import Toolbar from "./Toolbar";
+import { useBoxSize } from "./useBoxSize";
+import { useFullscreen } from "./useFullscreen";
+import { usePinchZoom } from "./usePinchZoom";
+import {
+    MAX_SCALE,
+    MIN_SCALE,
+    fitScale,
+    scaleBy,
+    zoomIn,
+    zoomOut,
+} from "./zoom";
 
-const PdfViewer = ({ file }) => {
-    const [page, setPage] = useState(1);
-    const [rotate, setRotate] = useState(0);
-    const [scale, setScale] = useState(1);
-    const [fullWidth, setFullWidth] = useState(true);
-    const [fullScreen, setfullScreen] = useState(false);
-    const [scrollingOver, setScrollingOver] = useState(false);
-    const canvasRef = useRef(null);
+// react-pdf reads the worker URL in the module that renders <Document>.
+pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
 
-    const { pdfDocument, pdfPage } = usePdf({
-        file,
-        page,
-        rotate,
-        scale: scale * 2,
-        canvasRef,
-        workerSrc: WORKER_SRC,
-    });
+// Space in pixels above a page after a jump to that page.
+const SCROLL_MARGIN = 8;
+// The viewer reads the page sizes in groups of this number of pages.
+const SIZE_BATCH = 50;
 
-    useEffect(() => {
-        const handleScroll = () => {
-            if (canvasRef.current) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                setScrollingOver(rect.top < 150 && rect.bottom > 0);
-            }
-        };
-        handleScroll();
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+const identity = (text) => text;
 
-    const handlePrint = async () => {
-        const { default: printJS } = await import("print-js-updated");
-        printJS({ printable: file, type: "pdf" });
-    };
-
-    const handleFullWidth = (event) => {
-        if (fullWidth) {
-            setScale(1);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else {
-            setFullWidth(true);
-            setScale(3);
-        }
-    };
-
-    const handleFullScreen = () => {
-        setScrollingOver(false);
-        setfullScreen(!fullScreen);
-    };
-
-    const handleScaleIncrease = (event) => {
-        if (fullWidth) {
-            setScale(2);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else if (!isMaxScale(scale)) {
-            setScale(scale + 0.25);
-        }
-    };
-
-    const handleScaleDecrease = (event) => {
-        if (fullWidth) {
-            setScale(0.75);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else if (!isMinScale(scale)) {
-            setScale(scale - 0.25);
-        }
-    };
-
-    const isMaxScale = (scale) => scale >= 3;
-
-    const isMinScale = (scale) => scale <= 0.25;
-
-    return (
-        <>
-            <div className={`pdf-viewer  ${fullScreen ? "pdf-viewer-full-screen" : ""}`}>
-                {Boolean(pdfDocument && pdfDocument.numPages) && (
-                    <nav
-                        className={`pdf-viewer-toolbar ${
-                            !fullScreen && scrollingOver ? "fixed-toolbar" : ""
-                        }`}
-                    >
-                        <div className="pdf-viewer-toolbar-left">
-                            <div className="btn-group">
-                                <a
-                                    className="btn"
-                                    href={file}
-                                    target="_blank"
-                                    rel="noopener"
-                                    title="Télécharger le document"
-                                >
-                                    <i className="bi bi-file-earmark-arrow-down"></i>
-                                </a>
-                                <button
-                                    className="btn"
-                                    onClick={handlePrint}
-                                    title="Imprimer le document"
-                                >
-                                    <i className="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pdf-viewer-toolbar-center">
-                            <button
-                                className="btn"
-                                disabled={page === 1}
-                                onClick={() => setPage(page - 1)}
-                                key={page - 1}
-                                title="Page précédente"
-                            >
-                                <i className="bi bi-chevron-left"></i>
-                            </button>
-
-                            <div className="pdf-viewer-page-count">
-                                {page} / {pdfDocument.numPages}
-                            </div>
-
-                            <button
-                                className="btn"
-                                disabled={page === pdfDocument.numPages}
-                                onClick={() => setPage(page + 1)}
-                                key={page + 1}
-                                title="Page suivante"
-                            >
-                                <i className="bi bi-chevron-right"></i>
-                            </button>
-                        </div>
-                        <div className="pdf-viewer-toolbar-right">
-                            <div
-                                className="btn-group border-end"
-                                role="group"
-                                aria-label="Basic example"
-                            >
-                                <button
-                                    className="btn"
-                                    onClick={() => setRotate(rotate + 90)}
-                                    title="Tourner la page"
-                                >
-                                    <i className="bi bi-arrow-clockwise"></i>
-                                </button>
-                            </div>
-
-                            {!fullWidth && (
-                                <div className="btn-group border-end">
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullWidth}
-                                        title="Pleine largeur"
-                                    >
-                                        <i className="bi bi-arrows-expand-vertical"></i>
-                                    </button>
-                                </div>
-                            )}
-
-                            {fullWidth && (
-                                <div className="btn-group border-end">
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullWidth}
-                                        title="Réduire"
-                                    >
-                                        <i className="bi bi-arrows-collapse-vertical"></i>
-                                    </button>
-                                </div>
-                            )}
-                            <div className="btn-group border-end" role="group">
-                                <button
-                                    className="btn"
-                                    onClick={handleScaleIncrease}
-                                    title="Zoomer"
-                                >
-                                    <i className="bi bi-plus-lg"></i>
-                                </button>
-                                <button
-                                    className="btn"
-                                    onClick={handleScaleDecrease}
-                                    title="Dézoomer"
-                                >
-                                    <i className="bi bi-dash-lg"></i>
-                                </button>
-                            </div>
-                            <div className="btn-group" role="group">
-                                {!fullScreen && (
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullScreen}
-                                        title="Plein écran"
-                                    >
-                                        <i className="bi bi-arrows-fullscreen"></i>
-                                    </button>
-                                )}
-                                {fullScreen && (
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullScreen}
-                                        title="Fermer"
-                                    >
-                                        <i className="bi bi-x-lg"></i>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </nav>
-                )}
-                <div className="pdf-viewer-page-viewport">
-                    <div className="pdf-viewer-page-container">
-                        {!pdfDocument && (
-                            <img src={SPINNER_URL} alt="loading..." />
-                        )}
-                        {pdfDocument && (
-                            <canvas className={fullWidth ? "pdf-full-width" : ""} ref={canvasRef} />
-                        )}
-                    </div>
-                </div>
-            </div>
-            {fullScreen && (
-                <button
-                    className="pdf-viewer-full-screen-overlay"
-                    onClick={handleFullScreen}
-                ></button>
-            )}
-        </>
-    );
+// Size of a page at scale 1, without rotation.
+const readSize = async (pdf, number) => {
+    const page = await pdf.getPage(number);
+    const { width, height } = page.getViewport({ scale: 1, rotation: 0 });
+    return { width, height, rotate: page.rotate };
 };
 
+// The page numbers in groups: page 1 alone, then groups of SIZE_BATCH pages.
+const sizeGroups = (numPages) => {
+    const groups = [[1]];
+    for (let first = 2; first <= numPages; first += SIZE_BATCH) {
+        const count = Math.min(SIZE_BATCH, numPages - first + 1);
+        groups.push(Array.from({ length: count }, (_, index) => first + index));
+    }
+    return groups;
+};
 
+// The same frame as fallback.js, for a PDF that cannot load.
+const ErrorMessage = ({ file, t }) => (
+    <div className="pdf-viewer-fallback" role="alert">
+        <span className="pdf-viewer-fallback-icon" aria-hidden="true">
+            <Icon name="file-earmark-pdf" />
+        </span>
+        <div className="pdf-viewer-fallback-body">
+            <p className="pdf-viewer-fallback-title">{t("The document cannot be displayed.")}</p>
+            <p className="pdf-viewer-fallback-text">
+                {t("Download it to read it with a PDF reader.")}
+            </p>
+            <a className="pdf-viewer-fallback-download" href={file} target="_blank" rel="noopener">
+                <Icon name="download" />
+                <span className="pdf-viewer-fallback-label">{t("Download the document")}</span>
+            </a>
+        </div>
+    </div>
+);
+
+const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity }) => {
+    const rootRef = useRef(null);
+    const viewportRef = useRef(null);
+    const pagesRef = useRef(null);
+    // The place of the reader: the page at one third of the viewport height,
+    // the scrolled part of it (`offset`) and the scrolled part of the gap
+    // above it in pixels (`gap`, 0 or less). The viewer keeps this place when
+    // the size of the pages changes. After the viewer scrolls to a place,
+    // `top` is the scroll position of this place.
+    const anchorRef = useRef(null);
+    const frameRef = useRef(0);
+    // The open document and the page sizes that the viewer read, by page index.
+    const [doc, setDoc] = useState({ pdf: null, sizes: [] });
+    const [failed, setFailed] = useState(false);
+    const [page, setPage] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [zoom, setZoom] = useState({ mode: "page-width", scale: 1 });
+    const box = useBoxSize(viewportRef);
+    const fullscreen = useFullscreen(rootRef);
+
+    const { pdf } = doc;
+    const numPages = pdf?.numPages ?? 0;
+    // A page with no size yet gets the size of the first page that the viewer read.
+    const sizes = useMemo(() => {
+        const estimate = doc.sizes.find(Boolean);
+        return estimate
+            ? Array.from({ length: numPages }, (_, index) => doc.sizes[index] ?? estimate)
+            : null;
+    }, [doc, numPages]);
+    const ready = sizes !== null && !failed;
+    const single = display === "single";
+    // The single mode fits the current page. The continuous mode fits all the pages.
+    const fitSizes = single ? sizes?.slice(page - 1, page) : sizes;
+    const scale =
+        zoom.mode === "custom" ? zoom.scale : fitScale(zoom.mode, fitSizes, rotation, box);
+
+    // react-pdf also sets data-page-number on its page. Select the boxes only.
+    const pageElement = (number) =>
+        viewportRef.current?.querySelector(`.pdf-viewer-page[data-page-number="${number}"]`);
+
+    const onLoadSuccess = useCallback(
+        (next) =>
+            setDoc((current) => (current.pdf === next ? current : { pdf: next, sizes: [] })),
+        [],
+    );
+
+    // Keep the sizes of the pages `numbers` of the document `from`.
+    const addSizes = (from, numbers, read) => {
+        saveAnchor();
+        setDoc((current) => {
+            if (current.pdf !== from) {
+                return current;
+            }
+            const next = [...current.sizes];
+            numbers.forEach((number, index) => {
+                next[number - 1] = read[index];
+            });
+            return { pdf: from, sizes: next };
+        });
+    };
+
+    // In continuous mode, read all the page sizes in page order. Page 1 shows
+    // before the viewer knows the other sizes.
+    useEffect(() => {
+        if (!pdf || single) {
+            return undefined;
+        }
+        let active = true;
+        const load = async () => {
+            for (const numbers of sizeGroups(pdf.numPages)) {
+                const read = await Promise.all(numbers.map((number) => readSize(pdf, number)));
+                if (!active) {
+                    return;
+                }
+                addSizes(pdf, numbers, read);
+            }
+        };
+        load().catch(() => active && setFailed(true));
+        return () => {
+            active = false;
+        };
+    }, [pdf, single]);
+
+    // In single mode, read the size of the current page only.
+    const pageKnown = Boolean(doc.sizes[page - 1]);
+    useEffect(() => {
+        if (!pdf || !single || pageKnown) {
+            return undefined;
+        }
+        let active = true;
+        readSize(pdf, page).then(
+            (size) => active && addSizes(pdf, [page], [size]),
+            () => active && setFailed(true),
+        );
+        return () => {
+            active = false;
+        };
+    }, [pdf, single, page, pageKnown]);
+
+    // Save the place of the reader before a change of the page geometry. The
+    // scroll tracker can be one frame late. If the reader did not scroll
+    // after the viewer scrolled to a place, the viewer keeps that place: the
+    // scroll limit can stop a page before it gets to the top.
+    const saveAnchor = () => {
+        const viewport = viewportRef.current;
+        if (!viewport) {
+            return null;
+        }
+        const anchor = anchorRef.current;
+        if (anchor?.top !== undefined && Math.abs(viewport.scrollTop - anchor.top) < 1) {
+            return anchor;
+        }
+        const line = viewport.scrollTop + viewport.clientHeight / 3;
+        let current = null;
+        for (const el of viewport.querySelectorAll(".pdf-viewer-page")) {
+            if (current && el.offsetTop > line) {
+                break;
+            }
+            current = el;
+        }
+        if (!current || !current.offsetHeight) {
+            return null;
+        }
+        // The gap between the pages does not change with the scale.
+        const above = viewport.scrollTop - current.offsetTop;
+        anchorRef.current = {
+            page: Number(current.dataset.pageNumber),
+            offset: Math.max(above, 0) / current.offsetHeight,
+            gap: Math.min(above, 0),
+        };
+        return anchorRef.current;
+    };
+
+    // The current page is the page of the place of the reader.
+    const trackScroll = () => {
+        const anchor = saveAnchor();
+        if (anchor) {
+            setPage(anchor.page);
+        }
+    };
+
+    // Scroll to the place `anchor`.
+    const showAnchor = (anchor) => {
+        const viewport = viewportRef.current;
+        const el = pageElement(anchor.page);
+        if (!viewport || !el) {
+            return;
+        }
+        const top = el.offsetTop + anchor.offset * el.offsetHeight + anchor.gap;
+        if (Math.abs(viewport.scrollTop - top) >= 1) {
+            viewport.scrollTop = top;
+        }
+        anchorRef.current = { ...anchor, top: viewport.scrollTop };
+    };
+
+    const onScroll = () => {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = requestAnimationFrame(trackScroll);
+    };
+
+    useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
+
+    // After a change of scale, rotation or page sizes, show the same place again.
+    useLayoutEffect(() => {
+        if (anchorRef.current) {
+            showAnchor(anchorRef.current);
+        }
+    }, [scale, rotation, sizes]);
+
+    const goToPage = (number) => {
+        const target = Math.min(Math.max(number, 1), numPages);
+        const viewport = viewportRef.current;
+        if (!target || !viewport) {
+            return;
+        }
+        setPage(target);
+        if (single) {
+            anchorRef.current = null;
+            viewport.scrollTop = 0;
+            return;
+        }
+        showAnchor({ page: target, offset: 0, gap: -SCROLL_MARGIN });
+    };
+
+    // react-pdf keeps the first onItemClick callback. This callback does not
+    // change. It calls the goToPage function of the last render.
+    const goToPageRef = useRef(goToPage);
+    useLayoutEffect(() => {
+        goToPageRef.current = goToPage;
+    });
+    const onItemClick = useCallback(({ pageNumber }) => goToPageRef.current(pageNumber), []);
+
+    const changeZoom = (next) => {
+        saveAnchor();
+        setZoom(next);
+    };
+    const setScale = (next) => changeZoom({ mode: "custom", scale: next });
+
+    usePinchZoom(viewportRef, {
+        // Scale the pages with CSS while the fingers move. Render them at the end.
+        onPinch: (ratio) => {
+            const viewport = viewportRef.current;
+            const pages = pagesRef.current;
+            if (!pages) {
+                return;
+            }
+            const x = viewport.scrollLeft + viewport.clientWidth / 2;
+            const y = viewport.scrollTop + viewport.clientHeight / 2;
+            pages.style.transformOrigin = `${x}px ${y}px`;
+            pages.style.transform = `scale(${ratio})`;
+        },
+        onPinchEnd: (ratio) => {
+            if (pagesRef.current) {
+                pagesRef.current.style.transform = "";
+            }
+            setScale(scaleBy(scale, ratio));
+        },
+        onDoubleTap: () => {
+            if (zoom.mode === "page-width") {
+                setScale(scaleBy(scale, 2));
+            } else {
+                changeZoom({ mode: "page-width", scale });
+            }
+        },
+    });
+
+    const actions = {
+        previous: () => goToPage(page - 1),
+        next: () => goToPage(page + 1),
+        print: async () => {
+            const { default: printJS } = await import("print-js-updated");
+            printJS({ printable: file, type: "pdf" });
+        },
+        rotate: () => {
+            saveAnchor();
+            setRotation((current) => (current + 90) % 360);
+        },
+        toggleFit: () =>
+            changeZoom({ mode: zoom.mode === "page-width" ? "page-fit" : "page-width", scale }),
+        zoomIn: () => setScale(zoomIn(scale)),
+        zoomOut: () => setScale(zoomOut(scale)),
+        toggleFullscreen: fullscreen.toggle,
+    };
+
+    // The keys work when the focus is in the viewer. In continuous mode, the
+    // browser scrolls with the arrows and the page keys.
+    const onKeyDown = (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey || !ready) {
+            return;
+        }
+        const keys = {
+            "+": actions.zoomIn,
+            "=": actions.zoomIn,
+            "-": actions.zoomOut,
+            ...(single && {
+                ArrowLeft: actions.previous,
+                PageUp: actions.previous,
+                ArrowRight: actions.next,
+                PageDown: actions.next,
+            }),
+        };
+        const action = keys[event.key];
+        if (action) {
+            event.preventDefault();
+            action();
+        }
+    };
+
+    return (
+        <section
+            ref={rootRef}
+            className={[
+                "pdf-viewer",
+                fullscreen.mode && "pdf-viewer-fullscreen",
+                fullscreen.mode === "fallback" && "pdf-viewer-fullscreen-fallback",
+            ]
+                .filter(Boolean)
+                .join(" ")}
+            aria-label={t("PDF document")}
+            onKeyDown={onKeyDown}
+        >
+            {ready && (
+                <Toolbar
+                    t={t}
+                    file={file}
+                    buttons={buttons}
+                    page={page}
+                    numPages={numPages}
+                    zoom={zoom}
+                    scale={scale}
+                    canZoomIn={scale < MAX_SCALE}
+                    canZoomOut={scale > MIN_SCALE}
+                    isFullscreen={fullscreen.mode !== null}
+                    actions={actions}
+                />
+            )}
+            <div
+                ref={viewportRef}
+                className="pdf-viewer-viewport"
+                tabIndex={0}
+                onScroll={onScroll}
+            >
+                <Document
+                    file={file}
+                    options={PDFJS_OPTIONS}
+                    inputRef={pagesRef}
+                    className="pdf-viewer-pages"
+                    suspense={false}
+                    loading={
+                        <img
+                            className="pdf-viewer-spinner"
+                            src={SPINNER_URL}
+                            alt={t("Loading the document…")}
+                        />
+                    }
+                    error={<ErrorMessage file={file} t={t} />}
+                    onLoadSuccess={onLoadSuccess}
+                    onLoadError={() => setFailed(true)}
+                    onItemClick={onItemClick}
+                    externalLinkTarget="_blank"
+                    externalLinkRel="noopener noreferrer"
+                >
+                    {failed ? (
+                        <ErrorMessage file={file} t={t} />
+                    ) : (
+                        sizes && (
+                            <Pages
+                                viewportRef={viewportRef}
+                                sizes={sizes}
+                                display={display}
+                                page={page}
+                                scale={scale}
+                                rotation={rotation}
+                            />
+                        )
+                    )}
+                </Document>
+            </div>
+        </section>
+    );
+};
 
 export default PdfViewer;

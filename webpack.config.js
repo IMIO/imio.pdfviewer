@@ -1,10 +1,36 @@
 process.traceDeprecation = true;
 const path = require("path");
+const CopyPlugin = require("copy-webpack-plugin");
 const mf_config = require("@patternslib/dev/webpack/webpack.mf");
 const webpack_config = require("@patternslib/dev/webpack/webpack.config").config;
 const package_json = require("./package.json");
 const package_json_mockup = require("@plone/mockup/package.json");
 const package_json_patternslib = require("@patternslib/patternslib/package.json");
+
+// react-pdf and pdf.js stay in this bundle: pdf.js must have the version of
+// the worker in this bundle. The other dependencies are shared with the
+// other Module Federation bundles of the page.
+const LOCAL_PACKAGES = ["react-pdf", "pdfjs-dist"];
+const shared_dependencies = Object.fromEntries(
+    Object.entries(package_json.dependencies).filter(
+        ([name]) => !LOCAL_PACKAGES.includes(name),
+    ),
+);
+
+// The iMio add-ons share one React with these entries, in addition to
+// "react" and "react-dom". Each add-on has the same version of react and
+// react-dom. The page takes the highest version of each entry, so react and
+// react-dom/client always have the same version.
+const shared_react = {
+    "react-dom/client": {
+        singleton: true,
+        requiredVersion: package_json.dependencies["react-dom"],
+    },
+    "react/jsx-runtime": {
+        singleton: true,
+        requiredVersion: package_json.dependencies.react,
+    },
+};
 
 module.exports = () => {
     let config = {
@@ -25,53 +51,52 @@ module.exports = () => {
     babel_rule.test = /\.jsx?$/;
     config.resolve.extensions = [".js", ".jsx", ".json"];
 
-    // Patch two dependencies for the browser bundle.
-    const replace_loader = path.resolve(__dirname, "webpack/replace-loader.js");
-    config.module.rules.push(
-        {
-            // usePdf loads the worker from cdnjs when workerSrc is not set.
-            // The viewer always sets it. Remove the CDN URL from the bundle.
-            test: /@mikecousins[\\/]react-pdf[\\/]dist[\\/]index\.mjs$/,
-            loader: replace_loader,
-            options: {
-                replacements: [
-                    {
-                        search: /workerSrc \|\| `\/\/cdnjs\.cloudflare\.com\/[^`]*`/,
-                        replace: "workerSrc",
-                    },
-                ],
-            },
+    // Use the legacy build of pdf.js. It supports older browsers.
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        "pdfjs-dist$": "pdfjs-dist/legacy/build/pdf.mjs",
+        "pdfjs-dist/web/pdf_viewer.mjs$": "pdfjs-dist/legacy/web/pdf_viewer.mjs",
+    };
+
+    // Webpack writes import.meta.url as the absolute path of the build
+    // machine. This code runs only in Node.js. A fixed URL keeps the bundle
+    // the same on all machines.
+    config.module.rules.push({
+        test: /pdfjs-dist[\\/]legacy[\\/]build[\\/]pdf\.mjs$/,
+        loader: path.resolve(__dirname, "webpack/replace-loader.js"),
+        options: {
+            replacements: [
+                {
+                    search: /createRequire\(import\.meta\.url\)/g,
+                    replace: 'createRequire("file:///pdfjs-dist/legacy/build/pdf.mjs")',
+                },
+            ],
         },
-        {
-            // Webpack writes import.meta.url as the absolute path of the build
-            // machine. This code runs only in Node.js. A fixed URL keeps the
-            // bundle the same on all machines.
-            test: /pdfjs-dist[\\/]build[\\/]pdf\.mjs$/,
-            loader: replace_loader,
-            options: {
-                replacements: [
-                    {
-                        search: /createRequire\(import\.meta\.url\)/,
-                        replace: 'createRequire("file:///pdfjs-dist/build/pdf.mjs")',
-                    },
-                ],
-            },
-        },
-    );
+    });
 
     // Keep the source name in the file names of the worker and the spinner.
     config.output.assetModuleFilename = "[name].[contenthash][ext]";
 
-    // The theme rules use @import and transparentize. Bootstrap too.
-    const sass_rule = config.module.rules.find((r) => String(r.test).includes("scss"));
-    const sass_loader = sass_rule.use.find((u) => u.loader === "sass-loader");
-    sass_loader.options.sassOptions = {
-        quietDeps: true,
-        silenceDeprecations: ["import", "global-builtin", "color-functions"],
-    };
-
     // pdf.js is large. Size hints give no useful information here.
     config.performance = { hints: false };
+
+    // pdf.js loads these files when a PDF needs them: the CMaps, the
+    // standard fonts, the CMYK color profile and the image decoders (JBIG2,
+    // CCITT, JPEG 2000). assets.js gives their URLs to pdf.js. quickjs runs
+    // the scripts of a PDF. react-pdf does not run them, so the build does
+    // not copy quickjs.
+    const pdfjs_dir = path.dirname(require.resolve("pdfjs-dist/package.json"));
+    config.plugins.push(
+        new CopyPlugin({
+            patterns: ["cmaps", "iccs", "standard_fonts", "wasm"].map((name) => ({
+                from: path.join(pdfjs_dir, name),
+                to: `pdfjs/${name}`,
+                globOptions: { ignore: ["**/*quickjs*", "**/*QUICKJS*"] },
+                // Copy the files as they are. Terser must not change them.
+                info: { minimized: true },
+            })),
+        }),
+    );
 
     config.plugins.push(
         mf_config({
@@ -84,8 +109,9 @@ module.exports = () => {
             dependencies: {
                 ...package_json_patternslib.dependencies,
                 ...package_json_mockup.dependencies,
-                ...package_json.dependencies,
+                ...shared_dependencies,
             },
+            shared: shared_react,
         }),
     );
 

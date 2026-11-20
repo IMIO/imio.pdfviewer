@@ -2,6 +2,7 @@
 *.egg-info
 *.pyc
 *.pyo
+*.mo
 
 # tools related
 __pycache__/
@@ -46,4 +47,7 @@ requirements*.txt
 # JavaScript. The bundle in src/imio/pdfviewer/browser/static/bundles/ is
 # committed on purpose: installing the package must not need Node.js.
 coverage/
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
 stats.json

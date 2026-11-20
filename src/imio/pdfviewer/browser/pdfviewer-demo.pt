@@ -7,17 +7,13 @@
 >
   <body>
 
-    <!-- Demo only. The viewer uses the Bootstrap Icons font. Barceloneta does
-         not load it, plonetheme.deliberations does. -->
-    <metal:style fill-slot="style_slot">
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-            rel="stylesheet"
-      />
-    </metal:style>
-
     <metal:content-core fill-slot="content-core">
       <metal:block define-macro="content-core">
-        <div class="pat-pdf-viewer">
+        <div class="pat-pdf-viewer"
+             tal:attributes="
+               data-pat-pdf-viewer view/options;
+             "
+        >
           <a tal:attributes="
                href request/form/url|nothing;
              ">PDF</a>

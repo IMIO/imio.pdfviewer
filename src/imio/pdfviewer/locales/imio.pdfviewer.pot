@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: imio.pdfviewer\n"
+"POT-Creation-Date: 2026-11-20 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Language-Code: en\n"
+"Language-Name: English\n"
+"Preferred-Encodings: utf-8 latin1\n"
+"Domain: imio.pdfviewer\n"
+
+msgid "Continuous scroll"
+msgstr ""
+
+msgid "Display mode"
+msgstr ""
+
+msgid "Document toolbar"
+msgstr ""
+
+msgid "Download"
+msgstr ""
+
+msgid "Download the document"
+msgstr ""
+
+msgid "Exit full screen"
+msgstr ""
+
+msgid "Fit to page"
+msgstr ""
+
+msgid "Fit to width"
+msgstr ""
+
+msgid "Fit to width or page"
+msgstr ""
+
+msgid "Full screen"
+msgstr ""
+
+msgid "How the viewer shows the pages."
+msgstr ""
+
+msgid "Loading the document…"
+msgstr ""
+
+msgid "Next page"
+msgstr ""
+
+msgid "PDF document"
+msgstr ""
+
+msgid "PDF viewer"
+msgstr ""
+
+msgid "PDF viewer settings"
+msgstr ""
+
+msgid "Page ${page} of ${count}"
+msgstr ""
+
+msgid "Previous page"
+msgstr ""
+
+msgid "Print"
+msgstr ""
+
+msgid "Rotate"
+msgstr ""
+
+msgid "Single page"
+msgstr ""
+
+msgid "The buttons that the toolbar shows. The page buttons always show."
+msgstr ""
+
+msgid "The document cannot be displayed."
+msgstr ""
+
+msgid "Toolbar buttons"
+msgstr ""
+
+msgid "Zoom"
+msgstr ""
+
+msgid "Zoom in"
+msgstr ""
+
+msgid "Zoom out"
+msgstr ""
+
+msgid "Download it to read it with a PDF reader."
+msgstr ""
+
+msgid "Download it to read it with a PDF reader. A recent version of Chrome, Edge, Firefox or Safari shows it here."
+msgstr ""
+
+msgid "Your browser cannot show this document"
+msgstr ""

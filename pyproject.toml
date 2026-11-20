@@ -43,6 +43,7 @@ test = [
     "pytest-plone>=1.0.0a2",
 ]
 release = [
+    "zest.pocompile",
     "zest.releaser[recommended]",
     "zestreleaser.towncrier",
 ]
@@ -87,6 +88,9 @@ namespaces = true
     "*.map",
     "*.mjs",
     "*.svg",
+    "*.po",
+    "*.pot",
+    "*.mo",
 ]
 
 [tool.towncrier]

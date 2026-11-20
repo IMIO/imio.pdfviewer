@@ -1,9 +1,22 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="imio.pdfviewer"
     >
 
+  <i18n:registerTranslations directory="locales" />
+
   <include file="profiles.zcml" />
+
+  <utility
+      name="imio.pdfviewer.DisplayModes"
+      component=".vocabularies.display_modes"
+      />
+
+  <utility
+      name="imio.pdfviewer.Buttons"
+      component=".vocabularies.buttons"
+      />
 
   <include package=".browser" />
 

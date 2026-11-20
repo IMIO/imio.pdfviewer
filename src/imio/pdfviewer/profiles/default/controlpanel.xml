@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+        name="portal_controlpanel"
+        purge="False"
+        i18n:domain="imio.pdfviewer"
+>
+
+  <configlet action_id="imio.pdfviewer"
+             appId="imio.pdfviewer"
+             category="Products"
+             condition_expr=""
+             icon_expr="string:file-earmark-pdf"
+             title="PDF viewer"
+             url_expr="string:${portal_url}/@@pdfviewer-settings"
+             visible="True"
+             i18n:attributes="title"
+  >
+    <permission>Manage portal</permission>
+  </configlet>
+
+</object>

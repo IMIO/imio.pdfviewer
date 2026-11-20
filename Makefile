@@ -141,6 +141,10 @@ js-start: node_modules ## Serve the demo and the bundle on localhost:3001
 js-test: node_modules ## Run the JavaScript tests
 	@npm test
 
+.PHONY: js-e2e
+js-e2e: node_modules ## Run the Cypress tests (start Plone first: make start)
+	@npm run e2e
+
 # Tests
 .PHONY: test
 test: $(VENV_FOLDER) ## run tests
