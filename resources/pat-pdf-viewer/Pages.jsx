@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Page } from "react-pdf";
+import ZoneLayer from "./ZoneLayer";
 import { pageBox, renderPixelRatio } from "./zoom";
 
 const pageNumber = (el) => Number(el.dataset.pageNumber);
@@ -42,7 +43,8 @@ const useNearPages = (viewportRef, count) => {
 
 // The page boxes. A box has the size of its page, so the scroll bar is
 // correct before the pages render. The "single" mode shows the current page only.
-const Pages = ({ viewportRef, sizes, display, page, scale, rotation }) => {
+// With `tags`, a page without rotation shows its signature zones.
+const Pages = ({ viewportRef, sizes, display, page, scale, rotation, tags = null }) => {
     const single = display === "single";
     const numbers = single ? [page] : sizes.map((size, index) => index + 1);
     const near = useNearPages(viewportRef, single ? 0 : sizes.length);
@@ -68,6 +70,18 @@ const Pages = ({ viewportRef, sizes, display, page, scale, rotation }) => {
                             window.devicePixelRatio,
                         )}
                         loading=""
+                    />
+                )}
+                {tags && rotation === 0 && size.rotate === 0 && (
+                    <ZoneLayer
+                        number={number}
+                        size={size}
+                        scale={scale}
+                        zones={tags.zones.filter((zone) => zone.page === number)}
+                        drawing={tags.drawing}
+                        onAdd={tags.onAdd}
+                        onRemove={tags.onRemove}
+                        t={tags.t}
                     />
                 )}
             </div>

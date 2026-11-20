@@ -4,6 +4,8 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { SPINNER_URL, WORKER_SRC } from "./assets";
 import Pages from "./Pages";
+import TagToolbar from "./TagToolbar";
+import { SignedPdfError, TAG_IDS, downloadTaggedPdf } from "./tags";
 import Toolbar from "./Toolbar";
 import { useBoxSize } from "./useBoxSize";
 import { useFullscreen } from "./useFullscreen";
@@ -43,7 +45,13 @@ const ErrorMessage = ({ file, t }) => (
     </p>
 );
 
-const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity }) => {
+const PdfViewer = ({
+    file,
+    display = "continuous",
+    buttons = [],
+    tags = false,
+    t = identity,
+}) => {
     const rootRef = useRef(null);
     const viewportRef = useRef(null);
     const pagesRef = useRef(null);
@@ -57,6 +65,13 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const [rotation, setRotation] = useState(0);
     const [zoom, setZoom] = useState({ mode: "page-width", scale: 1 });
     const box = useBoxSize(viewportRef);
+    // Signature zones: { key, id, page, x, y, width, height } in PDF points.
+    const zoneKeyRef = useRef(0);
+    const [zones, setZones] = useState([]);
+    const [tagId, setTagId] = useState(TAG_IDS[0]);
+    const [drawing, setDrawing] = useState(false);
+    const [tagBusy, setTagBusy] = useState(false);
+    const [tagMessage, setTagMessage] = useState("");
     const fullscreen = useFullscreen(rootRef);
 
     const numPages = sizes?.length ?? 0;
@@ -164,6 +179,48 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         },
     });
 
+    // The zones use the page coordinates without rotation.
+    const canDraw = rotation === 0;
+    const rotatedPages = sizes?.some((size) => size.rotate !== 0);
+
+    // A new zone replaces the zone with the same tag ID: one tag for each ID.
+    const addZone = (zone) => {
+        zoneKeyRef.current += 1;
+        setZones((current) => [
+            ...current.filter((other) => other.id !== tagId),
+            { ...zone, id: tagId, key: zoneKeyRef.current },
+        ]);
+        setTagMessage("");
+    };
+
+    const removeZone = (key) =>
+        setZones((current) => current.filter((zone) => zone.key !== key));
+
+    const downloadTagged = async () => {
+        setTagBusy(true);
+        setTagMessage(t("Writing the tags…"));
+        try {
+            const name = await downloadTaggedPdf(file, zones);
+            setTagMessage(t("Downloaded: ${name}", { name }));
+        } catch (error) {
+            setTagMessage(
+                error instanceof SignedPdfError
+                    ? t("The PDF is signed. The viewer does not change a signed PDF.")
+                    : t("The viewer cannot write the tags in this PDF."),
+            );
+            console.error(error);
+        } finally {
+            setTagBusy(false);
+        }
+    };
+
+    let tagNotice = tagMessage;
+    if (!tagNotice && !canDraw) {
+        tagNotice = t("Drawing works only without rotation.");
+    } else if (!tagNotice && rotatedPages) {
+        tagNotice = t("Drawing is off on the pages with their own rotation.");
+    }
+
     const actions = {
         previous: () => goToPage(page - 1),
         next: () => goToPage(page + 1),
@@ -231,6 +288,20 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                     actions={actions}
                 />
             )}
+            {tags && numPages > 0 && !failed && (
+                <TagToolbar
+                    t={t}
+                    tagId={tagId}
+                    onTagId={setTagId}
+                    drawing={drawing && canDraw}
+                    canDraw={canDraw}
+                    onToggleDrawing={() => setDrawing((current) => !current)}
+                    zoneCount={zones.length}
+                    busy={tagBusy}
+                    onDownload={downloadTagged}
+                    message={tagNotice}
+                />
+            )}
             <div
                 ref={viewportRef}
                 className="pdf-viewer-viewport"
@@ -264,6 +335,15 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                             page={page}
                             scale={scale}
                             rotation={rotation}
+                            tags={
+                                tags && {
+                                    zones,
+                                    drawing: drawing && canDraw,
+                                    onAdd: addZone,
+                                    onRemove: removeZone,
+                                    t,
+                                }
+                            }
                         />
                     )}
                 </Document>

@@ -168,6 +168,74 @@
     .pdf-viewer-scroll-lock {
         overflow: hidden;
     }
+
+    // Signature tags.
+    .pdf-viewer-tag-toolbar {
+        justify-content: flex-start;
+        gap: 0.5rem;
+
+        .pdf-viewer-toolbar-group {
+            gap: 0.5rem;
+        }
+    }
+
+    .pdf-viewer-tag-message {
+        font-size: 0.875rem;
+    }
+
+    // Above the text layer and the annotation layer of react-pdf.
+    .pdf-viewer-zones {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+    }
+
+    // The browser does not scroll or zoom when a drag starts on the page.
+    .pdf-viewer-zones-drawing {
+        pointer-events: auto;
+        cursor: crosshair;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .pdf-viewer-zone {
+        position: absolute;
+        box-sizing: border-box;
+        border: 2px dashed #d63384;
+        background: rgba(214, 51, 132, 0.12);
+    }
+
+    .pdf-viewer-zone-draft {
+        border-style: solid;
+    }
+
+    .pdf-viewer-zone-label {
+        position: absolute;
+        bottom: 100%;
+        left: -2px;
+        padding: 0 0.25rem;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        color: #fff;
+        white-space: nowrap;
+        background: #d63384;
+    }
+
+    .pdf-viewer-zone-remove {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0;
+        line-height: 1;
+        color: #fff;
+        background: #d63384;
+        border: 0;
+        cursor: pointer;
+        pointer-events: auto;
+    }
 }
 
 // Bootstrap and the Plone themes style all the links and buttons with rules
@@ -179,4 +247,16 @@
     color: inherit;
     text-decoration: none;
     border-radius: var(--pdf-viewer-radius, var(--bs-border-radius, 0.375rem));
+}
+
+// The Bootstrap label and select rules are outside a layer too.
+.pdf-viewer .pdf-viewer-tag-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.pdf-viewer .pdf-viewer-tag-select {
+    width: auto;
 }

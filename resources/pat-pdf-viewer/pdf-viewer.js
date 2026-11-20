@@ -13,6 +13,8 @@ parser.addArgument("url", null);
 parser.addArgument("display", null);
 // A list, or a text with names separated by spaces or commas.
 parser.addArgument("buttons", null);
+// Show the tools to place the signature tags of imio.esign.
+parser.addArgument("tags", false);
 
 class Pattern extends BasePattern {
     static name = "pdf-viewer";
@@ -48,7 +50,9 @@ class Pattern extends BasePattern {
         const [{ createRoot }, { createElement }, { default: PdfViewer }, t] = modules;
         // The React root replaces the fallback link.
         this.root = createRoot(this.el);
-        this.root.render(createElement(PdfViewer, { file: url, t, ...options }));
+        this.root.render(
+            createElement(PdfViewer, { file: url, t, ...options, tags: this.options.tags }),
+        );
     }
 
     destroy() {
