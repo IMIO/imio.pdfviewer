@@ -55,8 +55,10 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const rootRef = useRef(null);
     const viewportRef = useRef(null);
     const pagesRef = useRef(null);
-    // The page at the top of the viewport and the scrolled part of it.
-    // The viewer keeps this place when the size of the pages changes.
+    // The place of the reader: the page at one third of the viewport height
+    // and the scrolled part of it. The viewer keeps this place when the size
+    // of the pages changes. After the viewer scrolls to a place, `top` is the
+    // scroll position of this place.
     const anchorRef = useRef(null);
     const frameRef = useRef(0);
     // The open document and the page sizes that the viewer read, by page index.
@@ -95,7 +97,8 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     );
 
     // Keep the sizes of the pages `numbers` of the document `from`.
-    const addSizes = (from, numbers, read) =>
+    const addSizes = (from, numbers, read) => {
+        saveAnchor();
         setDoc((current) => {
             if (current.pdf !== from) {
                 return current;
@@ -106,6 +109,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             });
             return { pdf: from, sizes: next };
         });
+    };
 
     // In continuous mode, read all the page sizes in page order. Page 1 shows
     // before the viewer knows the other sizes.
@@ -145,11 +149,18 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         };
     }, [pdf, single, page, pageKnown]);
 
-    // The current page is the page at one third of the viewport height.
-    const trackScroll = () => {
+    // Save the place of the reader before a change of the page geometry. The
+    // scroll tracker can be one frame late. If the reader did not scroll
+    // after the viewer scrolled to a place, the viewer keeps that place: the
+    // scroll limit can stop a page before it gets to the top.
+    const saveAnchor = () => {
         const viewport = viewportRef.current;
         if (!viewport) {
-            return;
+            return null;
+        }
+        const anchor = anchorRef.current;
+        if (anchor?.top !== undefined && Math.abs(viewport.scrollTop - anchor.top) < 1) {
+            return anchor;
         }
         const line = viewport.scrollTop + viewport.clientHeight / 3;
         let current = null;
@@ -160,13 +171,35 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             current = el;
         }
         if (!current || !current.offsetHeight) {
-            return;
+            return null;
         }
         anchorRef.current = {
             page: Number(current.dataset.pageNumber),
             offset: (viewport.scrollTop - current.offsetTop) / current.offsetHeight,
         };
-        setPage(anchorRef.current.page);
+        return anchorRef.current;
+    };
+
+    // The current page is the page of the place of the reader.
+    const trackScroll = () => {
+        const anchor = saveAnchor();
+        if (anchor) {
+            setPage(anchor.page);
+        }
+    };
+
+    // Scroll to the place `anchor`.
+    const showAnchor = (anchor) => {
+        const viewport = viewportRef.current;
+        const el = pageElement(anchor.page);
+        if (!viewport || !el) {
+            return;
+        }
+        const top = el.offsetTop + anchor.offset * el.offsetHeight;
+        if (Math.abs(viewport.scrollTop - top) >= 1) {
+            viewport.scrollTop = top;
+        }
+        anchorRef.current = { ...anchor, top: viewport.scrollTop };
     };
 
     const onScroll = () => {
@@ -178,10 +211,8 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
 
     // After a change of scale, rotation or page sizes, show the same place again.
     useLayoutEffect(() => {
-        const anchor = anchorRef.current;
-        const el = anchor && pageElement(anchor.page);
-        if (el) {
-            viewportRef.current.scrollTop = el.offsetTop + anchor.offset * el.offsetHeight;
+        if (anchorRef.current) {
+            showAnchor(anchorRef.current);
         }
     }, [scale, rotation, sizes]);
 
@@ -201,11 +232,10 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         if (!el) {
             return;
         }
-        anchorRef.current = {
+        showAnchor({
             page: target,
             offset: el.offsetHeight ? -SCROLL_MARGIN / el.offsetHeight : 0,
-        };
-        viewport.scrollTop = el.offsetTop - SCROLL_MARGIN;
+        });
     };
 
     // react-pdf keeps the first onItemClick callback. This callback does not
@@ -216,7 +246,11 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     });
     const onItemClick = useCallback(({ pageNumber }) => goToPageRef.current(pageNumber), []);
 
-    const setScale = (next) => setZoom({ mode: "custom", scale: next });
+    const changeZoom = (next) => {
+        saveAnchor();
+        setZoom(next);
+    };
+    const setScale = (next) => changeZoom({ mode: "custom", scale: next });
 
     usePinchZoom(viewportRef, {
         // Scale the pages with CSS while the fingers move. Render them at the end.
@@ -241,7 +275,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             if (zoom.mode === "page-width") {
                 setScale(scaleBy(scale, 2));
             } else {
-                setZoom({ mode: "page-width", scale });
+                changeZoom({ mode: "page-width", scale });
             }
         },
     });
@@ -253,9 +287,12 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             const { default: printJS } = await import("print-js-updated");
             printJS({ printable: file, type: "pdf" });
         },
-        rotate: () => setRotation((current) => (current + 90) % 360),
+        rotate: () => {
+            saveAnchor();
+            setRotation((current) => (current + 90) % 360);
+        },
         toggleFit: () =>
-            setZoom({ mode: zoom.mode === "page-width" ? "page-fit" : "page-width", scale }),
+            changeZoom({ mode: zoom.mode === "page-width" ? "page-fit" : "page-width", scale }),
         zoomIn: () => setScale(zoomIn(scale)),
         zoomOut: () => setScale(zoomOut(scale)),
         toggleFullscreen: fullscreen.toggle,
