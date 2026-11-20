@@ -195,3 +195,14 @@ parallel = true
 
 [tool.zest-releaser]
 python-file-with-version = "src/imio/pdfviewer/__init__.py"
+
+[tool.check-manifest]
+# Development files: the package does not need them.
+ignore = [
+    ".editorconfig",
+    "Makefile",
+    "cypress/**",
+    "instance.yaml",
+    "mx.ini",
+    "scripts/**",
+]
