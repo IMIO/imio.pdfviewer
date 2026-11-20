@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 const DOUBLE_TAP_DELAY = 300;
 // A touch that moves more than this distance (px) is not a tap.
 const TAP_DISTANCE = 10;
+// The two taps of a double tap are nearer than this distance (px).
+const DOUBLE_TAP_DISTANCE = 30;
 
 const spread = (touches) =>
     Math.hypot(
@@ -26,7 +28,8 @@ export const usePinchZoom = (ref, handlers) => {
         let startSpread = null;
         let ratio = 1;
         let tapStart = null;
-        let lastTap = -Infinity;
+        // Time and position of the last tap.
+        let lastTap = null;
 
         const onTouchStart = (event) => {
             if (event.touches.length === 2) {
@@ -70,12 +73,23 @@ export const usePinchZoom = (ref, handlers) => {
             if (!isTap) {
                 return;
             }
-            if (event.timeStamp - lastTap < DOUBLE_TAP_DELAY) {
+            const isDoubleTap =
+                lastTap &&
+                event.timeStamp - lastTap.time < DOUBLE_TAP_DELAY &&
+                Math.hypot(
+                    touch.clientX - lastTap.clientX,
+                    touch.clientY - lastTap.clientY,
+                ) < DOUBLE_TAP_DISTANCE;
+            if (isDoubleTap) {
                 event.preventDefault();
-                lastTap = -Infinity;
+                lastTap = null;
                 handlersRef.current.onDoubleTap();
             } else {
-                lastTap = event.timeStamp;
+                lastTap = {
+                    time: event.timeStamp,
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                };
             }
         };
 
