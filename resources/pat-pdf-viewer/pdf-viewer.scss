@@ -96,17 +96,53 @@
     }
 
     // A narrow viewer has no space for one row. The page buttons go on a
-    // second row, in the middle.
+    // second row, in the middle, under a line. The spaces are smaller.
     @container (max-width: 46rem) {
         .pdf-viewer-toolbar {
             grid-template-columns: auto 1fr;
             grid-template-areas:
                 "start end"
                 "pages pages";
+            row-gap: 0.125rem;
+            padding: 0.125rem 0.25rem;
         }
 
         .pdf-viewer-toolbar-end {
             flex-wrap: wrap;
+        }
+
+        .pdf-viewer-toolbar-cluster {
+            padding: 0 0.25rem;
+        }
+
+        // The line goes from one side of the toolbar to the other.
+        .pdf-viewer-toolbar-pages {
+            justify-self: stretch;
+            justify-content: center;
+            margin: 0 -0.25rem;
+            padding-top: 0.125rem;
+            border-top: 1px solid var(--pdf-viewer-divider, var(--bs-gray-400, #ced4da));
+        }
+
+        // The base rule comes later in this file: a longer selector wins.
+        .pdf-viewer-toolbar .pdf-viewer-page-count,
+        .pdf-viewer-toolbar .pdf-viewer-zoom-level {
+            min-width: 3rem;
+        }
+    }
+
+    // A phone: the first row must still hold all its buttons.
+    @container (max-width: 24rem) {
+        .pdf-viewer-toolbar-cluster {
+            padding: 0 0.125rem;
+        }
+
+        .pdf-viewer-toolbar .pdf-viewer-button {
+            min-width: 2.375rem;
+        }
+
+        .pdf-viewer-toolbar .pdf-viewer-zoom-level {
+            min-width: 2.75rem;
         }
     }
 
@@ -134,10 +170,10 @@
             cursor: default;
         }
 
-        // Touch screens: a target of at least 44 x 44 pixels.
+        // Touch screens: a target of 40 x 40 pixels.
         @media (pointer: coarse) {
-            min-width: 2.75rem;
-            min-height: 2.75rem;
+            min-width: 2.5rem;
+            min-height: 2.5rem;
         }
     }
 
