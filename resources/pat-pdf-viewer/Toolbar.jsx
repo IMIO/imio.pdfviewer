@@ -106,20 +106,14 @@ const Toolbar = ({
                         />
                     </>
                 )}
-                {show("fullscreen") &&
-                    (isFullscreen ? (
-                        <Button
-                            label={t("Exit full screen")}
-                            icon="fullscreen-exit"
-                            onClick={actions.toggleFullscreen}
-                        />
-                    ) : (
-                        <Button
-                            label={t("Full screen")}
-                            icon="arrows-fullscreen"
-                            onClick={actions.toggleFullscreen}
-                        />
-                    ))}
+                {/* One button for the two states, so that it keeps the focus. */}
+                {show("fullscreen") && (
+                    <Button
+                        label={isFullscreen ? t("Exit full screen") : t("Full screen")}
+                        icon={isFullscreen ? "fullscreen-exit" : "arrows-fullscreen"}
+                        onClick={actions.toggleFullscreen}
+                    />
+                )}
             </div>
         </div>
     );
