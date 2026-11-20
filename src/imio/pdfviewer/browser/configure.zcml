@@ -5,6 +5,11 @@
     i18n_domain="imio.pdfviewer"
     >
 
+  <include
+      package="Products.CMFCore"
+      file="permissions.zcml"
+      />
+
   <!-- The JavaScript bundle: ++plone++imio.pdfviewer/bundles/... -->
   <plone:static
       directory="static"
@@ -17,6 +22,22 @@
       for="*"
       class=".demo.DemoView"
       template="pdfviewer-demo.pt"
+      permission="zope2.View"
+      layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"
+      />
+
+  <browser:page
+      name="pdfviewer-settings"
+      for="plone.base.interfaces.IPloneSiteRoot"
+      class=".controlpanel.PdfViewerSettingsView"
+      permission="cmf.ManagePortal"
+      layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"
+      />
+
+  <browser:viewlet
+      name="imio.pdfviewer.settings"
+      manager="plone.app.layout.viewlets.interfaces.IHtmlHead"
+      class=".viewlets.SettingsViewlet"
       permission="zope2.View"
       layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"
       />

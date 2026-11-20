@@ -1,0 +1,97 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: imio.pdfviewer\n"
+"POT-Creation-Date: 2026-11-20 00:00+0000\n"
+"PO-Revision-Date: 2026-11-20 00:00+0000\n"
+"Last-Translator: iMio\n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Language-Code: fr\n"
+"Language-Name: Français\n"
+"Preferred-Encodings: utf-8 latin1\n"
+"Domain: imio.pdfviewer\n"
+"Language: fr\n"
+
+msgid "Continuous scroll"
+msgstr "Défilement continu"
+
+msgid "Display mode"
+msgstr "Mode d'affichage"
+
+msgid "Document toolbar"
+msgstr "Barre d'outils du document"
+
+msgid "Download"
+msgstr "Télécharger le document"
+
+msgid "Download the document"
+msgstr "Télécharger le document"
+
+msgid "Exit full screen"
+msgstr "Quitter le plein écran"
+
+msgid "Fit to page"
+msgstr "Page entière"
+
+msgid "Fit to width"
+msgstr "Pleine largeur"
+
+msgid "Fit to width or page"
+msgstr "Pleine largeur ou page entière"
+
+msgid "Full screen"
+msgstr "Plein écran"
+
+msgid "How the viewer shows the pages."
+msgstr "Comment la visionneuse affiche les pages."
+
+msgid "Loading the document…"
+msgstr "Chargement du document…"
+
+msgid "Next page"
+msgstr "Page suivante"
+
+msgid "PDF document"
+msgstr "Document PDF"
+
+msgid "PDF viewer"
+msgstr "Visionneuse PDF"
+
+msgid "PDF viewer settings"
+msgstr "Réglages de la visionneuse PDF"
+
+msgid "Page ${page} of ${count}"
+msgstr "Page ${page} sur ${count}"
+
+msgid "Previous page"
+msgstr "Page précédente"
+
+msgid "Print"
+msgstr "Imprimer le document"
+
+msgid "Rotate"
+msgstr "Tourner la page"
+
+msgid "Single page"
+msgstr "Page par page"
+
+msgid "The buttons that the toolbar shows. The page buttons always show."
+msgstr "Les boutons que la barre d'outils affiche. Les boutons de page sont toujours affichés."
+
+msgid "The document cannot be displayed."
+msgstr "Le document ne peut pas être affiché."
+
+msgid "Toolbar buttons"
+msgstr "Boutons de la barre d'outils"
+
+msgid "Zoom"
+msgstr "Zoom"
+
+msgid "Zoom in"
+msgstr "Zoomer"
+
+msgid "Zoom out"
+msgstr "Dézoomer"
