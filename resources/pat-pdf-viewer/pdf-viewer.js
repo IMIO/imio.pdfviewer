@@ -19,6 +19,8 @@ class Pattern extends BasePattern {
     static trigger = ".pat-pdf-viewer";
     static parser = parser;
 
+    #destroyed = false;
+
     async init() {
         import("./pdf-viewer.scss");
 
@@ -45,6 +47,10 @@ class Pattern extends BasePattern {
             log.error("Cannot load the PDF viewer.", error);
             return;
         }
+        // destroy() can run while the modules and the catalog load.
+        if (this.#destroyed) {
+            return;
+        }
         const [{ createRoot }, { createElement }, { default: PdfViewer }, t] = modules;
         // The React root replaces the fallback link.
         this.root = createRoot(this.el);
@@ -52,6 +58,7 @@ class Pattern extends BasePattern {
     }
 
     destroy() {
+        this.#destroyed = true;
         this.root?.unmount();
         super.destroy();
     }
