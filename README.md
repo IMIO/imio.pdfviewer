@@ -53,6 +53,10 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-page-shadow` | Shadow of a page. |
 | `--pdf-viewer-fullscreen-z-index` | Stack level of the full screen when the browser refuses the Fullscreen API. |
 
+Bootstrap styles all links and buttons outside a layer. So the color, the
+underline and the corners of the toolbar buttons are set outside the layer
+too, with `.pdf-viewer .pdf-viewer-button`: change them with the properties.
+
 Without these properties, the viewer uses the Bootstrap variables of the
 page (`--bs-body-color`, `--bs-tertiary-bg`…), so `data-bs-theme="dark"`
 works.
