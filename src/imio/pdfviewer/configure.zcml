@@ -5,6 +5,16 @@
 
   <include file="profiles.zcml" />
 
+  <utility
+      name="imio.pdfviewer.DisplayModes"
+      component=".vocabularies.display_modes"
+      />
+
+  <utility
+      name="imio.pdfviewer.Buttons"
+      component=".vocabularies.buttons"
+      />
+
   <include package=".browser" />
 
 </configure>
