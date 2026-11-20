@@ -73,24 +73,33 @@ const Toolbar = ({
 
             <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-end">
                 {show("rotate") && (
-                    <Button label={t("Rotate")} icon="arrow-clockwise" onClick={actions.rotate} />
+                    <div className="pdf-viewer-toolbar-cluster">
+                        <Button
+                            label={t("Rotate")}
+                            icon="arrow-clockwise"
+                            onClick={actions.rotate}
+                        />
+                    </div>
                 )}
-                {show("fit") &&
-                    (zoom.mode === "page-width" ? (
-                        <Button
-                            label={t("Fit to page")}
-                            icon="arrows-collapse-vertical"
-                            onClick={actions.toggleFit}
-                        />
-                    ) : (
-                        <Button
-                            label={t("Fit to width")}
-                            icon="arrows-expand-vertical"
-                            onClick={actions.toggleFit}
-                        />
-                    ))}
+                {show("fit") && (
+                    <div className="pdf-viewer-toolbar-cluster">
+                        {zoom.mode === "page-width" ? (
+                            <Button
+                                label={t("Fit to page")}
+                                icon="arrows-collapse-vertical"
+                                onClick={actions.toggleFit}
+                            />
+                        ) : (
+                            <Button
+                                label={t("Fit to width")}
+                                icon="arrows-expand-vertical"
+                                onClick={actions.toggleFit}
+                            />
+                        )}
+                    </div>
+                )}
                 {show("zoom") && (
-                    <>
+                    <div className="pdf-viewer-toolbar-cluster">
                         <Button
                             label={t("Zoom out")}
                             icon="dash-lg"
@@ -104,15 +113,17 @@ const Toolbar = ({
                             onClick={actions.zoomIn}
                             disabled={!canZoomIn}
                         />
-                    </>
+                    </div>
                 )}
-                {/* One button for the two states, so that it keeps the focus. */}
                 {show("fullscreen") && (
-                    <Button
-                        label={isFullscreen ? t("Exit full screen") : t("Full screen")}
-                        icon={isFullscreen ? "fullscreen-exit" : "arrows-fullscreen"}
-                        onClick={actions.toggleFullscreen}
-                    />
+                    <div className="pdf-viewer-toolbar-cluster">
+                        {/* One button for the two states, so that it keeps the focus. */}
+                        <Button
+                            label={isFullscreen ? t("Exit full screen") : t("Full screen")}
+                            icon={isFullscreen ? "fullscreen-exit" : "arrows-fullscreen"}
+                            onClick={actions.toggleFullscreen}
+                        />
+                    </div>
                 )}
             </div>
         </div>

@@ -10,7 +10,10 @@
 //   --pdf-viewer-gap              space around and between the pages
 //   --pdf-viewer-toolbar-bg       background of the toolbar
 //   --pdf-viewer-toolbar-border   line under the toolbar
+//   --pdf-viewer-sticky-top       space above the toolbar when it sticks to the
+//                                 top of the window (for a fixed site header)
 //   --pdf-viewer-button-hover-bg  background of a button under the pointer
+//   --pdf-viewer-divider          line between the groups of toolbar buttons
 //   --pdf-viewer-focus            color of the focus outline
 //   --pdf-viewer-page-shadow      shadow of a page
 //   --pdf-viewer-page-radius      corner radius of a page
@@ -32,13 +35,20 @@
 
     // The page buttons are in the middle of the toolbar: the two side
     // columns always have the same width.
+    // When the top of the viewer goes above the window, the toolbar stays at
+    // the top of the window, inside the viewer. The viewer clips its content
+    // with "overflow: clip", which does not stop a sticky position.
     .pdf-viewer-toolbar {
+        position: sticky;
+        top: var(--pdf-viewer-sticky-top, 0);
+        // Above the text and link layers of the pages.
+        z-index: 10;
         display: grid;
         grid-template-columns: 1fr auto 1fr;
         grid-template-areas: "start pages end";
         align-items: center;
         gap: 0.25rem;
-        padding: 0.25rem 0.5rem;
+        padding: 0.375rem 0.5rem;
         background: var(--pdf-viewer-toolbar-bg, var(--bs-secondary-bg, #e9ecef));
         border-bottom: var(
             --pdf-viewer-toolbar-border,
@@ -66,6 +76,23 @@
         grid-area: end;
         justify-self: end;
         justify-content: flex-end;
+        gap: 0;
+    }
+
+    // A line separates the groups of buttons on the right.
+    .pdf-viewer-toolbar-cluster {
+        display: flex;
+        align-items: center;
+        gap: 0.125rem;
+        padding: 0 0.5rem;
+
+        & + & {
+            border-left: 1px solid var(--pdf-viewer-divider, var(--bs-gray-400, #ced4da));
+        }
+
+        &:last-child {
+            padding-right: 0;
+        }
     }
 
     // A narrow viewer has no space for one row. The page buttons go on a

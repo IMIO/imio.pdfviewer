@@ -48,7 +48,9 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-gap` | Space around and between the pages. |
 | `--pdf-viewer-toolbar-bg` | Background of the toolbar. |
 | `--pdf-viewer-toolbar-border` | Line under the toolbar. |
+| `--pdf-viewer-sticky-top` | Space above the toolbar when it sticks to the top of the window, for a fixed site header (default `0`). |
 | `--pdf-viewer-button-hover-bg` | Background of a button under the pointer. |
+| `--pdf-viewer-divider` | Line between the groups of toolbar buttons. |
 | `--pdf-viewer-focus` | Color of the focus outline. |
 | `--pdf-viewer-page-shadow` | Shadow of a page. |
 | `--pdf-viewer-page-radius` | Corner radius of a page. |
