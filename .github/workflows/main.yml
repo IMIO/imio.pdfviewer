@@ -57,6 +57,8 @@ jobs:
 
       - name: Install
         run: npm ci
+        env:
+          CYPRESS_INSTALL_BINARY: 0
 
       - name: Test
         run: npm test
@@ -73,6 +75,49 @@ jobs:
             exit 1
           fi
 
+  e2e:
+    name: "Frontend: Cypress"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install JavaScript packages
+        run: npm ci
+
+      - name: Install Plone
+        run: make install
+
+      - name: Create the test site
+        run: make create-site
+
+      # Cypress runs against the committed bundle.
+      - name: Run Cypress
+        uses: cypress-io/github-action@v7
+        with:
+          install: false
+          start: make start
+          wait-on: "http://localhost:8080/Plone"
+          wait-on-timeout: 180
+
+      - name: Keep the screenshots of the failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+
   report:
     name: "Final report"
     if: ${{ always() }}
@@ -83,6 +128,7 @@ jobs:
       - test
       - coverage
       - frontend
+      - e2e
     steps:
       - name: Report
         shell: bash
@@ -95,3 +141,4 @@ jobs:
           echo '| Test | ${{ needs.test.result }} |' >> $GITHUB_STEP_SUMMARY
           echo '| Coverage | ${{ needs.coverage.result }} |' >> $GITHUB_STEP_SUMMARY
           echo '| Frontend | ${{ needs.frontend.result }} |' >> $GITHUB_STEP_SUMMARY
+          echo '| Cypress | ${{ needs.e2e.result }} |' >> $GITHUB_STEP_SUMMARY

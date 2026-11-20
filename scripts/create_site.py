@@ -1,5 +1,7 @@
 from AccessControl.SecurityManagement import newSecurityManager
 from imio.pdfviewer.interfaces import IImioPdfviewerLayer
+from pathlib import Path
+from plone.namedfile.file import NamedBlobFile
 from Products.CMFPlone.factory import _DEFAULT_PROFILE
 from Products.CMFPlone.factory import addPloneSite
 from Products.GenericSetup.tool import SetupTool
@@ -63,4 +65,15 @@ if site_id not in app.objectIds():
 
     portal_setup: SetupTool = site.portal_setup
     portal_setup.runAllImportStepsFromProfile("profile-imio.pdfviewer:default")
+    transaction.commit()
+
+    # A sample PDF for the demo page and the Cypress tests.
+    # make runs this script from the root of the repository.
+    sample = Path("resources/sample.pdf")
+    site.invokeFactory("File", "sample.pdf", title="Sample PDF")
+    site["sample.pdf"].file = NamedBlobFile(
+        data=sample.read_bytes(),
+        contentType="application/pdf",
+        filename="sample.pdf",
+    )
     transaction.commit()
