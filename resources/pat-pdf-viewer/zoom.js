@@ -13,6 +13,20 @@ const TOLERANCE = 0.01;
 
 export const clampScale = (scale) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 
+// The scale multiplied by the ratio, inside the zoom range. A ratio above 1
+// never makes the scale smaller, and a ratio below 1 never makes it larger,
+// also when the scale is outside the range.
+export const scaleBy = (scale, ratio) => {
+    const next = clampScale(scale * ratio);
+    if (ratio > 1) {
+        return Math.max(scale, next);
+    }
+    if (ratio < 1) {
+        return Math.min(scale, next);
+    }
+    return scale;
+};
+
 // The first zoom level above the scale.
 export const zoomIn = (scale) =>
     ZOOM_LEVELS.find((level) => level > scale + TOLERANCE) ?? Math.max(scale, MAX_SCALE);

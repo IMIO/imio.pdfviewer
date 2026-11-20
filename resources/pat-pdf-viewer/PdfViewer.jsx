@@ -11,8 +11,8 @@ import { usePinchZoom } from "./usePinchZoom";
 import {
     MAX_SCALE,
     MIN_SCALE,
-    clampScale,
     fitScale,
+    scaleBy,
     widestPage,
     zoomIn,
     zoomOut,
@@ -153,11 +153,11 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             if (pagesRef.current) {
                 pagesRef.current.style.transform = "";
             }
-            setScale(clampScale(scale * ratio));
+            setScale(scaleBy(scale, ratio));
         },
         onDoubleTap: () => {
             if (zoom.mode === "page-width") {
-                setScale(clampScale(scale * 2));
+                setScale(scaleBy(scale, 2));
             } else {
                 setZoom({ mode: "page-width", scale });
             }
