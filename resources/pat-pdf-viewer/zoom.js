@@ -45,21 +45,21 @@ export const pageBox = (size, rotation, scale) => {
     };
 };
 
-// The page with the largest width after rotation.
-export const widestPage = (sizes, rotation) =>
-    sizes.reduce((widest, size) =>
-        pageBox(size, rotation, 1).width > pageBox(widest, rotation, 1).width ? size : widest,
-    );
-
-// The scale that shows the full page width ("page-width") or the full page
-// ("page-fit") in the box.
-export const fitScale = (mode, size, rotation, box) => {
-    if (!size || box.width <= 0 || box.height <= 0) {
+// The largest scale that shows the full width ("page-width") or the full
+// page ("page-fit") of each page in the box.
+export const fitScale = (mode, sizes, rotation, box) => {
+    if (!sizes?.length || box.width <= 0 || box.height <= 0) {
         return 1;
     }
-    const page = pageBox(size, rotation, 1);
-    const byWidth = box.width / page.width;
-    return mode === "page-width" ? byWidth : Math.min(byWidth, box.height / page.height);
+    return sizes.reduce((scale, size) => {
+        const page = pageBox(size, rotation, 1);
+        const byWidth = box.width / page.width;
+        const fit =
+            mode === "page-width"
+                ? byWidth
+                : Math.min(byWidth, box.height / page.height);
+        return Math.min(scale, fit);
+    }, Infinity);
 };
 
 // Pixel ratio of a canvas: the ratio of the device, lower when the canvas is too large.

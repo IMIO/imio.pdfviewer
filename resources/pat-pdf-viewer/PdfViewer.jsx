@@ -13,7 +13,6 @@ import {
     MIN_SCALE,
     fitScale,
     scaleBy,
-    widestPage,
     zoomIn,
     zoomOut,
 } from "./zoom";
@@ -61,9 +60,10 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
 
     const numPages = sizes?.length ?? 0;
     const single = display === "single";
-    const fitSize = sizes && (single ? sizes[page - 1] : widestPage(sizes, rotation));
+    // The single mode fits the current page. The continuous mode fits all the pages.
+    const fitSizes = single ? sizes?.slice(page - 1, page) : sizes;
     const scale =
-        zoom.mode === "custom" ? zoom.scale : fitScale(zoom.mode, fitSize, rotation, box);
+        zoom.mode === "custom" ? zoom.scale : fitScale(zoom.mode, fitSizes, rotation, box);
 
     // react-pdf also sets data-page-number on its page. Select the boxes only.
     const pageElement = (number) =>
