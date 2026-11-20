@@ -9,3 +9,10 @@ Cypress.Commands.add("visitViewer", (options = {}) => {
     cy.visit(`/@@pdfviewer-demo?${params}`);
     cy.get(".pdf-viewer").should("exist");
 });
+
+// Send the requests to the site as the admin user, with HTTP basic auth.
+Cypress.Commands.add("asAdmin", () => {
+    cy.intercept(`${Cypress.config("baseUrl")}/**`, (request) => {
+        request.headers.authorization = `Basic ${btoa("admin:admin")}`;
+    });
+});

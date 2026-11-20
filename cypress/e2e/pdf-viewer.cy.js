@@ -162,4 +162,47 @@ describe("pat-pdf-viewer", () => {
             .trigger("touchend", { touches: [], changedTouches: finger });
         button("Fit to page").should("exist");
     });
+
+    it("has French translations", () => {
+        cy.request("/plonejsi18n?domain=imio.pdfviewer&language=fr")
+            .its("body")
+            .should((catalog) => {
+                expect(catalog["Zoom in"]).to.equal("Zoomer");
+                expect(catalog["Page ${page} of ${count}"]).to.equal(
+                    "Page ${page} sur ${count}",
+                );
+            });
+    });
+
+    describe("site settings", () => {
+        const ALL_BUTTONS = ["download", "print", "rotate", "fit", "zoom", "fullscreen"];
+
+        const saveSettings = ({ display, buttons }) => {
+            cy.asAdmin();
+            cy.visit("/@@pdfviewer-settings");
+            cy.get("#form-widgets-display").select(display);
+            cy.get('input[name="form.widgets.buttons:list"]').each(($box) => {
+                cy.wrap($box)[buttons.includes($box.val()) ? "check" : "uncheck"]();
+            });
+            cy.get("#form-buttons-save").click();
+            cy.contains("Changes saved");
+        };
+
+        afterEach(() => saveSettings({ display: "continuous", buttons: ALL_BUTTONS }));
+
+        it("applies the site settings", () => {
+            saveSettings({ display: "single", buttons: ["zoom"] });
+            cy.visitViewer();
+            cy.get("script#imio-pdfviewer-settings").should("exist");
+            cy.get(".pdf-viewer-page").should("have.length", 1);
+            button("Zoom in").should("exist");
+            button("Download").should("not.exist");
+        });
+
+        it("lets the options of the element replace the site settings", () => {
+            saveSettings({ display: "single", buttons: ["zoom"] });
+            cy.visitViewer({ display: "continuous" });
+            cy.get(".pdf-viewer-page").should("have.length", 3);
+        });
+    });
 });

@@ -107,6 +107,7 @@ jobs:
         uses: cypress-io/github-action@v7
         with:
           install: false
+          browser: chrome
           start: make start
           wait-on: "http://localhost:8080/Plone"
           wait-on-timeout: 180
