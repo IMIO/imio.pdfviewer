@@ -3,7 +3,11 @@ import utils from "@patternslib/patternslib/src/core/utils";
 import printJS from "print-js-updated";
 
 // jsdom has no canvas and cannot run pdf.js. Mock react-pdf.
-jest.mock("./assets", () => ({ WORKER_SRC: "worker.mjs", SPINNER_URL: "spinner.svg" }));
+jest.mock("./assets", () => ({
+    WORKER_SRC: "worker.mjs",
+    SPINNER_URL: "spinner.svg",
+    PDFJS_OPTIONS: {},
+}));
 jest.mock("react-pdf", () => {
     const { createElement, useEffect } = require("react");
     const pdf = {

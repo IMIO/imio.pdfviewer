@@ -1,8 +1,11 @@
 // Translations of the "imio.pdfviewer" domain. Plone gives the catalog URL on
 // the body (data-i18ncatalogurl), as for mockup. This loader waits for the
-// catalog, so the viewer shows translated labels at the first render.
+// catalog, so the viewer shows translated labels at the first render. It waits
+// TIMEOUT at most.
 
 const DOMAIN = "imio.pdfviewer";
+// Maximum time in milliseconds for the request and the body of the catalog.
+const TIMEOUT = 3000;
 
 const interpolate = (text, keywords = {}) =>
     text.replace(/\$\{(\w+)\}/g, (match, key) =>
@@ -17,13 +20,22 @@ export const loadTranslations = async (doc = document) => {
             domain: DOMAIN,
             language: doc.documentElement.lang || "en",
         });
+        let timer;
         try {
-            const response = await fetch(`${url}?${params}`);
+            // The abort also stops a body that is not complete.
+            const controller = new AbortController();
+            timer = setTimeout(() => controller.abort(), TIMEOUT);
+            const response = await fetch(`${url}?${params}`, {
+                signal: controller.signal,
+            });
             if (response.ok) {
                 catalog = (await response.json()) || {};
             }
         } catch {
-            // Without the catalog, the viewer shows the English messages.
+            // After an error or after the time limit, the viewer shows the
+            // English messages.
+        } finally {
+            clearTimeout(timer);
         }
     }
     return (msgid, keywords) => interpolate(catalog[msgid] || msgid, keywords);

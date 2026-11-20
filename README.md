@@ -90,6 +90,11 @@ spinner resolve relative to that script (webpack `publicPath: "auto"`), so a
 `++plone++imio.pdfviewer` resource directory is all the add-on needs. No file
 loads from a CDN.
 
+The build also copies resources of `pdfjs-dist` into `bundles/pdfjs/`: the
+CMaps (`cmaps/`), the standard fonts (`standard_fonts/`), the CMYK color
+profile (`iccs/`) and the JBIG2, CCITT and JPEG 2000 image decoders (`wasm/`).
+pdf.js loads a file from there only when a PDF needs it.
+
 `@patternslib/patternslib` and `@plone/mockup` are pinned to the versions of
 `plone.staticresources` in the target Plone release (Plone 6.2.2:
 `@plone/mockup` 5.6.10, `@patternslib/patternslib` 9.10.7). Shared singletons

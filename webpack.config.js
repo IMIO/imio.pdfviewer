@@ -1,5 +1,6 @@
 process.traceDeprecation = true;
 const path = require("path");
+const CopyPlugin = require("copy-webpack-plugin");
 const mf_config = require("@patternslib/dev/webpack/webpack.mf");
 const webpack_config = require("@patternslib/dev/webpack/webpack.config").config;
 const package_json = require("./package.json");
@@ -78,6 +79,24 @@ module.exports = () => {
 
     // pdf.js is large. Size hints give no useful information here.
     config.performance = { hints: false };
+
+    // pdf.js loads these files when a PDF needs them: the CMaps, the
+    // standard fonts, the CMYK color profile and the image decoders (JBIG2,
+    // CCITT, JPEG 2000). assets.js gives their URLs to pdf.js. quickjs runs
+    // the scripts of a PDF. react-pdf does not run them, so the build does
+    // not copy quickjs.
+    const pdfjs_dir = path.dirname(require.resolve("pdfjs-dist/package.json"));
+    config.plugins.push(
+        new CopyPlugin({
+            patterns: ["cmaps", "iccs", "standard_fonts", "wasm"].map((name) => ({
+                from: path.join(pdfjs_dir, name),
+                to: `pdfjs/${name}`,
+                globOptions: { ignore: ["**/*quickjs*", "**/*QUICKJS*"] },
+                // Copy the files as they are. Terser must not change them.
+                info: { minimized: true },
+            })),
+        }),
+    );
 
     config.plugins.push(
         mf_config({
