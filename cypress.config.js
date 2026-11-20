@@ -1,3 +1,4 @@
+const { spawnSync } = require("child_process");
 const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
@@ -11,5 +12,21 @@ module.exports = defineConfig({
         viewportWidth: 1280,
         viewportHeight: 900,
         video: false,
+        setupNodeEvents(on) {
+            on("task", {
+                // The signature tags of a PDF, read by spike/check_tags.py.
+                checkTags(path) {
+                    const result = spawnSync(
+                        "uvx",
+                        ["--with", "jsonschema", "python", "spike/check_tags.py", "--json", path],
+                        { encoding: "utf-8" },
+                    );
+                    if (result.error || !result.stdout) {
+                        throw new Error(`check_tags.py failed: ${result.error || result.stderr}`);
+                    }
+                    return JSON.parse(result.stdout);
+                },
+            });
+        },
     },
 });
