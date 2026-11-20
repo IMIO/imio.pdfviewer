@@ -15,6 +15,7 @@
   <browser:page
       name="pdfviewer-demo"
       for="*"
+      class=".demo.DemoView"
       template="pdfviewer-demo.pt"
       permission="zope2.View"
       layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"

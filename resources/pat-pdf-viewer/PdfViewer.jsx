@@ -1,232 +1,228 @@
-import { useState, useRef, useEffect } from "react";
-import { usePdf } from "@mikecousins/react-pdf";
-import { WORKER_SRC, SPINNER_URL } from "./assets";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Document, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { SPINNER_URL, WORKER_SRC } from "./assets";
+import Pages from "./Pages";
+import Toolbar from "./Toolbar";
+import { useBoxSize } from "./useBoxSize";
+import { MAX_SCALE, MIN_SCALE, fitScale, widestPage, zoomIn, zoomOut } from "./zoom";
 
-const PdfViewer = ({ file }) => {
+// react-pdf reads the worker URL in the module that renders <Document>.
+pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+
+// Space in pixels above a page after a jump to that page.
+const SCROLL_MARGIN = 8;
+
+const identity = (text) => text;
+
+// Size of each page at scale 1, without rotation.
+const readSizes = (pdf) =>
+    Promise.all(
+        Array.from({ length: pdf.numPages }, async (_, index) => {
+            const page = await pdf.getPage(index + 1);
+            const { width, height } = page.getViewport({ scale: 1, rotation: 0 });
+            return { width, height, rotate: page.rotate };
+        }),
+    );
+
+const ErrorMessage = ({ file, t }) => (
+    <p className="pdf-viewer-error" role="alert">
+        {t("The document cannot be displayed.")}{" "}
+        <a href={file}>{t("Download the document")}</a>
+    </p>
+);
+
+const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity }) => {
+    const rootRef = useRef(null);
+    const viewportRef = useRef(null);
+    const pagesRef = useRef(null);
+    // The page at the top of the viewport and the scrolled part of it.
+    // The viewer keeps this place when the size of the pages changes.
+    const anchorRef = useRef(null);
+    const frameRef = useRef(0);
+    const [sizes, setSizes] = useState(null);
+    const [failed, setFailed] = useState(false);
     const [page, setPage] = useState(1);
-    const [rotate, setRotate] = useState(0);
-    const [scale, setScale] = useState(1);
-    const [fullWidth, setFullWidth] = useState(true);
-    const [fullScreen, setfullScreen] = useState(false);
-    const [scrollingOver, setScrollingOver] = useState(false);
-    const canvasRef = useRef(null);
+    const [rotation, setRotation] = useState(0);
+    const [zoom, setZoom] = useState({ mode: "page-width", scale: 1 });
+    const box = useBoxSize(viewportRef);
 
-    const { pdfDocument, pdfPage } = usePdf({
-        file,
-        page,
-        rotate,
-        scale: scale * 2,
-        canvasRef,
-        workerSrc: WORKER_SRC,
-    });
+    const numPages = sizes?.length ?? 0;
+    const single = display === "single";
+    const fitSize = sizes && (single ? sizes[page - 1] : widestPage(sizes, rotation));
+    const scale =
+        zoom.mode === "custom" ? zoom.scale : fitScale(zoom.mode, fitSize, rotation, box);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            if (canvasRef.current) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                setScrollingOver(rect.top < 150 && rect.bottom > 0);
+    // react-pdf also sets data-page-number on its page. Select the boxes only.
+    const pageElement = (number) =>
+        viewportRef.current?.querySelector(`.pdf-viewer-page[data-page-number="${number}"]`);
+
+    const onLoadSuccess = useCallback(async (pdf) => setSizes(await readSizes(pdf)), []);
+
+    // The current page is the page at one third of the viewport height.
+    const trackScroll = () => {
+        const viewport = viewportRef.current;
+        if (!viewport) {
+            return;
+        }
+        const line = viewport.scrollTop + viewport.clientHeight / 3;
+        let current = null;
+        for (const el of viewport.querySelectorAll(".pdf-viewer-page")) {
+            if (current && el.offsetTop > line) {
+                break;
             }
+            current = el;
+        }
+        if (!current || !current.offsetHeight) {
+            return;
+        }
+        anchorRef.current = {
+            page: Number(current.dataset.pageNumber),
+            offset: (viewport.scrollTop - current.offsetTop) / current.offsetHeight,
         };
-        handleScroll();
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const handlePrint = async () => {
-        const { default: printJS } = await import("print-js-updated");
-        printJS({ printable: file, type: "pdf" });
+        setPage(anchorRef.current.page);
     };
 
-    const handleFullWidth = (event) => {
-        if (fullWidth) {
-            setScale(1);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else {
-            setFullWidth(true);
-            setScale(3);
+    const onScroll = () => {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = requestAnimationFrame(trackScroll);
+    };
+
+    useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
+
+    // After a change of scale or rotation, show the same place again.
+    useLayoutEffect(() => {
+        const anchor = anchorRef.current;
+        const el = anchor && pageElement(anchor.page);
+        if (el) {
+            viewportRef.current.scrollTop = el.offsetTop + anchor.offset * el.offsetHeight;
+        }
+    }, [scale, rotation]);
+
+    const goToPage = (number) => {
+        const target = Math.min(Math.max(number, 1), numPages);
+        const viewport = viewportRef.current;
+        if (!target || !viewport) {
+            return;
+        }
+        setPage(target);
+        if (single) {
+            anchorRef.current = null;
+            viewport.scrollTop = 0;
+            return;
+        }
+        const el = pageElement(target);
+        if (!el) {
+            return;
+        }
+        anchorRef.current = {
+            page: target,
+            offset: el.offsetHeight ? -SCROLL_MARGIN / el.offsetHeight : 0,
+        };
+        viewport.scrollTop = el.offsetTop - SCROLL_MARGIN;
+    };
+
+    const setScale = (next) => setZoom({ mode: "custom", scale: next });
+
+    const actions = {
+        previous: () => goToPage(page - 1),
+        next: () => goToPage(page + 1),
+        print: async () => {
+            const { default: printJS } = await import("print-js-updated");
+            printJS({ printable: file, type: "pdf" });
+        },
+        rotate: () => setRotation((current) => (current + 90) % 360),
+        toggleFit: () =>
+            setZoom({ mode: zoom.mode === "page-width" ? "page-fit" : "page-width", scale }),
+        zoomIn: () => setScale(zoomIn(scale)),
+        zoomOut: () => setScale(zoomOut(scale)),
+    };
+
+    // The keys work when the focus is in the viewer. In continuous mode, the
+    // browser scrolls with the arrows and the page keys.
+    const onKeyDown = (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey || !numPages) {
+            return;
+        }
+        const keys = {
+            "+": actions.zoomIn,
+            "=": actions.zoomIn,
+            "-": actions.zoomOut,
+            ...(single && {
+                ArrowLeft: actions.previous,
+                PageUp: actions.previous,
+                ArrowRight: actions.next,
+                PageDown: actions.next,
+            }),
+        };
+        const action = keys[event.key];
+        if (action) {
+            event.preventDefault();
+            action();
         }
     };
-
-    const handleFullScreen = () => {
-        setScrollingOver(false);
-        setfullScreen(!fullScreen);
-    };
-
-    const handleScaleIncrease = (event) => {
-        if (fullWidth) {
-            setScale(2);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else if (!isMaxScale(scale)) {
-            setScale(scale + 0.25);
-        }
-    };
-
-    const handleScaleDecrease = (event) => {
-        if (fullWidth) {
-            setScale(0.75);
-            setTimeout(() => setFullWidth(false), 100); // Avoid flickering effect
-        } else if (!isMinScale(scale)) {
-            setScale(scale - 0.25);
-        }
-    };
-
-    const isMaxScale = (scale) => scale >= 3;
-
-    const isMinScale = (scale) => scale <= 0.25;
 
     return (
-        <>
-            <div className={`pdf-viewer  ${fullScreen ? "pdf-viewer-full-screen" : ""}`}>
-                {Boolean(pdfDocument && pdfDocument.numPages) && (
-                    <nav
-                        className={`pdf-viewer-toolbar ${
-                            !fullScreen && scrollingOver ? "fixed-toolbar" : ""
-                        }`}
-                    >
-                        <div className="pdf-viewer-toolbar-left">
-                            <div className="btn-group">
-                                <a
-                                    className="btn"
-                                    href={file}
-                                    target="_blank"
-                                    rel="noopener"
-                                    title="Télécharger le document"
-                                >
-                                    <i className="bi bi-file-earmark-arrow-down"></i>
-                                </a>
-                                <button
-                                    className="btn"
-                                    onClick={handlePrint}
-                                    title="Imprimer le document"
-                                >
-                                    <i className="bi bi-printer"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pdf-viewer-toolbar-center">
-                            <button
-                                className="btn"
-                                disabled={page === 1}
-                                onClick={() => setPage(page - 1)}
-                                key={page - 1}
-                                title="Page précédente"
-                            >
-                                <i className="bi bi-chevron-left"></i>
-                            </button>
-
-                            <div className="pdf-viewer-page-count">
-                                {page} / {pdfDocument.numPages}
-                            </div>
-
-                            <button
-                                className="btn"
-                                disabled={page === pdfDocument.numPages}
-                                onClick={() => setPage(page + 1)}
-                                key={page + 1}
-                                title="Page suivante"
-                            >
-                                <i className="bi bi-chevron-right"></i>
-                            </button>
-                        </div>
-                        <div className="pdf-viewer-toolbar-right">
-                            <div
-                                className="btn-group border-end"
-                                role="group"
-                                aria-label="Basic example"
-                            >
-                                <button
-                                    className="btn"
-                                    onClick={() => setRotate(rotate + 90)}
-                                    title="Tourner la page"
-                                >
-                                    <i className="bi bi-arrow-clockwise"></i>
-                                </button>
-                            </div>
-
-                            {!fullWidth && (
-                                <div className="btn-group border-end">
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullWidth}
-                                        title="Pleine largeur"
-                                    >
-                                        <i className="bi bi-arrows-expand-vertical"></i>
-                                    </button>
-                                </div>
-                            )}
-
-                            {fullWidth && (
-                                <div className="btn-group border-end">
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullWidth}
-                                        title="Réduire"
-                                    >
-                                        <i className="bi bi-arrows-collapse-vertical"></i>
-                                    </button>
-                                </div>
-                            )}
-                            <div className="btn-group border-end" role="group">
-                                <button
-                                    className="btn"
-                                    onClick={handleScaleIncrease}
-                                    title="Zoomer"
-                                >
-                                    <i className="bi bi-plus-lg"></i>
-                                </button>
-                                <button
-                                    className="btn"
-                                    onClick={handleScaleDecrease}
-                                    title="Dézoomer"
-                                >
-                                    <i className="bi bi-dash-lg"></i>
-                                </button>
-                            </div>
-                            <div className="btn-group" role="group">
-                                {!fullScreen && (
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullScreen}
-                                        title="Plein écran"
-                                    >
-                                        <i className="bi bi-arrows-fullscreen"></i>
-                                    </button>
-                                )}
-                                {fullScreen && (
-                                    <button
-                                        className="btn"
-                                        onClick={handleFullScreen}
-                                        title="Fermer"
-                                    >
-                                        <i className="bi bi-x-lg"></i>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </nav>
-                )}
-                <div className="pdf-viewer-page-viewport">
-                    <div className="pdf-viewer-page-container">
-                        {!pdfDocument && (
-                            <img src={SPINNER_URL} alt="loading..." />
-                        )}
-                        {pdfDocument && (
-                            <canvas className={fullWidth ? "pdf-full-width" : ""} ref={canvasRef} />
-                        )}
-                    </div>
-                </div>
-            </div>
-            {fullScreen && (
-                <button
-                    className="pdf-viewer-full-screen-overlay"
-                    onClick={handleFullScreen}
-                ></button>
+        <section
+            ref={rootRef}
+            className="pdf-viewer"
+            aria-label={t("PDF document")}
+            onKeyDown={onKeyDown}
+        >
+            {numPages > 0 && !failed && (
+                <Toolbar
+                    t={t}
+                    file={file}
+                    buttons={buttons}
+                    page={page}
+                    numPages={numPages}
+                    zoom={zoom}
+                    scale={scale}
+                    canZoomIn={scale < MAX_SCALE}
+                    canZoomOut={scale > MIN_SCALE}
+                    actions={actions}
+                />
             )}
-        </>
+            <div
+                ref={viewportRef}
+                className="pdf-viewer-viewport"
+                tabIndex={0}
+                onScroll={onScroll}
+            >
+                <Document
+                    file={file}
+                    inputRef={pagesRef}
+                    className="pdf-viewer-pages"
+                    suspense={false}
+                    loading={
+                        <img
+                            className="pdf-viewer-spinner"
+                            src={SPINNER_URL}
+                            alt={t("Loading the document…")}
+                        />
+                    }
+                    error={<ErrorMessage file={file} t={t} />}
+                    onLoadSuccess={onLoadSuccess}
+                    onLoadError={() => setFailed(true)}
+                    onItemClick={({ pageNumber }) => goToPage(pageNumber)}
+                    externalLinkTarget="_blank"
+                    externalLinkRel="noopener noreferrer"
+                >
+                    {sizes && (
+                        <Pages
+                            viewportRef={viewportRef}
+                            sizes={sizes}
+                            display={display}
+                            page={page}
+                            scale={scale}
+                            rotation={rotation}
+                        />
+                    )}
+                </Document>
+            </div>
+        </section>
     );
 };
-
-
 
 export default PdfViewer;

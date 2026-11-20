@@ -25,50 +25,31 @@ module.exports = () => {
     babel_rule.test = /\.jsx?$/;
     config.resolve.extensions = [".js", ".jsx", ".json"];
 
-    // Patch two dependencies for the browser bundle.
-    const replace_loader = path.resolve(__dirname, "webpack/replace-loader.js");
-    config.module.rules.push(
-        {
-            // usePdf loads the worker from cdnjs when workerSrc is not set.
-            // The viewer always sets it. Remove the CDN URL from the bundle.
-            test: /@mikecousins[\\/]react-pdf[\\/]dist[\\/]index\.mjs$/,
-            loader: replace_loader,
-            options: {
-                replacements: [
-                    {
-                        search: /workerSrc \|\| `\/\/cdnjs\.cloudflare\.com\/[^`]*`/,
-                        replace: "workerSrc",
-                    },
-                ],
-            },
+    // Use the legacy build of pdf.js. It supports older browsers.
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        "pdfjs-dist$": "pdfjs-dist/legacy/build/pdf.mjs",
+        "pdfjs-dist/web/pdf_viewer.mjs$": "pdfjs-dist/legacy/web/pdf_viewer.mjs",
+    };
+
+    // Webpack writes import.meta.url as the absolute path of the build
+    // machine. This code runs only in Node.js. A fixed URL keeps the bundle
+    // the same on all machines.
+    config.module.rules.push({
+        test: /pdfjs-dist[\\/]legacy[\\/]build[\\/]pdf\.mjs$/,
+        loader: path.resolve(__dirname, "webpack/replace-loader.js"),
+        options: {
+            replacements: [
+                {
+                    search: /createRequire\(import\.meta\.url\)/g,
+                    replace: 'createRequire("file:///pdfjs-dist/legacy/build/pdf.mjs")',
+                },
+            ],
         },
-        {
-            // Webpack writes import.meta.url as the absolute path of the build
-            // machine. This code runs only in Node.js. A fixed URL keeps the
-            // bundle the same on all machines.
-            test: /pdfjs-dist[\\/]build[\\/]pdf\.mjs$/,
-            loader: replace_loader,
-            options: {
-                replacements: [
-                    {
-                        search: /createRequire\(import\.meta\.url\)/,
-                        replace: 'createRequire("file:///pdfjs-dist/build/pdf.mjs")',
-                    },
-                ],
-            },
-        },
-    );
+    });
 
     // Keep the source name in the file names of the worker and the spinner.
     config.output.assetModuleFilename = "[name].[contenthash][ext]";
-
-    // The theme rules use @import and transparentize. Bootstrap too.
-    const sass_rule = config.module.rules.find((r) => String(r.test).includes("scss"));
-    const sass_loader = sass_rule.use.find((u) => u.loader === "sass-loader");
-    sass_loader.options.sassOptions = {
-        quietDeps: true,
-        silenceDeprecations: ["import", "global-builtin", "color-functions"],
-    };
 
     // pdf.js is large. Size hints give no useful information here.
     config.performance = { hints: false };

@@ -2,18 +2,41 @@ import Pattern from "./pdf-viewer";
 import utils from "@patternslib/patternslib/src/core/utils";
 import printJS from "print-js-updated";
 
-// jsdom has no canvas and cannot run pdf.js. Mock at the hook boundary.
+// jsdom has no canvas and cannot run pdf.js. Mock react-pdf.
 jest.mock("./assets", () => ({ WORKER_SRC: "worker.mjs", SPINNER_URL: "spinner.svg" }));
-jest.mock("@mikecousins/react-pdf", () => ({
-    usePdf: () => ({ pdfDocument: { numPages: 3 }, pdfPage: {} }),
-}));
+jest.mock("react-pdf", () => {
+    const { createElement, useEffect } = require("react");
+    const pdf = {
+        numPages: 3,
+        getPage: async () => ({
+            rotate: 0,
+            getViewport: () => ({ width: 600, height: 800 }),
+        }),
+    };
+    return {
+        pdfjs: { GlobalWorkerOptions: {} },
+        Document: ({ children, className, onLoadSuccess }) => {
+            useEffect(() => {
+                onLoadSuccess(pdf);
+            }, []);
+            return createElement("div", { className }, children);
+        },
+        Page: ({ pageNumber }) => createElement("canvas", { "data-page": pageNumber }),
+    };
+});
 jest.mock("print-js-updated", () => jest.fn());
+
+// The ResizeObserver stub of @patternslib/dev has no disconnect method.
+global.ResizeObserver = class {
+    observe() {}
+    disconnect() {}
+};
 
 const PDF_URL = "https://example.org/doc/@@download/file/report.pdf";
 
-// Let the pattern init, the lazy imports and the React render complete.
+// Let the pattern init, the lazy imports and the React renders complete.
 const settle = async () => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
         await utils.timeout(10);
     }
 };
@@ -26,7 +49,8 @@ const mount = async (html) => {
     return { el, instance };
 };
 
-const button = (el, title) => el.querySelector(`button[title="${title}"]`);
+const button = (el, label) => el.querySelector(`[aria-label="${label}"]`);
+const count = (el) => el.querySelector(".pdf-viewer-page-count [aria-hidden]").textContent;
 
 describe("pat-pdf-viewer", () => {
     beforeEach(() => {
@@ -37,18 +61,16 @@ describe("pat-pdf-viewer", () => {
     it("mounts from a child link", async () => {
         const { el } = await mount(`
             <div class="pat-pdf-viewer">
-                <a href="${PDF_URL}">Télécharger le document</a>
+                <a href="${PDF_URL}">Download the document</a>
             </div>
         `);
 
-        expect(el.querySelector(".pdf-viewer .pdf-viewer-toolbar")).toBeTruthy();
-        expect(el.querySelector(".pdf-viewer-page-count").textContent).toBe("1 / 3");
-        const download = el.querySelector('a[title="Télécharger le document"]');
+        expect(el.querySelector(".pdf-viewer [role=toolbar]")).toBeTruthy();
+        expect(count(el)).toBe("1 / 3");
+        const download = button(el, "Download");
         expect(download.getAttribute("href")).toBe(PDF_URL);
         expect(download.getAttribute("target")).toBe("_blank");
-        expect(el.querySelector("canvas").classList.contains("pdf-full-width")).toBe(
-            true,
-        );
+        expect(el.querySelectorAll(".pdf-viewer-page")).toHaveLength(3);
     });
 
     it("mounts from the url option", async () => {
@@ -56,10 +78,8 @@ describe("pat-pdf-viewer", () => {
             <div class="pat-pdf-viewer" data-pat-pdf-viewer='{"url": "${PDF_URL}"}'></div>
         `);
 
-        expect(el.querySelector(".pdf-viewer-page-count").textContent).toBe("1 / 3");
-        expect(
-            el.querySelector('a[title="Télécharger le document"]').getAttribute("href"),
-        ).toBe(PDF_URL);
+        expect(count(el)).toBe("1 / 3");
+        expect(button(el, "Download").getAttribute("href")).toBe(PDF_URL);
     });
 
     it("warns and renders nothing without a url", async () => {
@@ -75,26 +95,28 @@ describe("pat-pdf-viewer", () => {
 
     it("changes the page inside the bounds", async () => {
         const { el } = await mount(`
-            <div class="pat-pdf-viewer"><a href="${PDF_URL}">PDF</a></div>
+            <div class="pat-pdf-viewer" data-pat-pdf-viewer='{"display": "single"}'>
+                <a href="${PDF_URL}">PDF</a>
+            </div>
         `);
-        const count = () => el.querySelector(".pdf-viewer-page-count").textContent;
 
-        expect(button(el, "Page précédente").disabled).toBe(true);
-        expect(button(el, "Page suivante").disabled).toBe(false);
+        expect(el.querySelectorAll(".pdf-viewer-page")).toHaveLength(1);
+        expect(button(el, "Previous page").disabled).toBe(true);
+        expect(button(el, "Next page").disabled).toBe(false);
 
-        button(el, "Page suivante").click();
+        button(el, "Next page").click();
         await settle();
-        expect(count()).toBe("2 / 3");
+        expect(count(el)).toBe("2 / 3");
 
-        button(el, "Page suivante").click();
+        button(el, "Next page").click();
         await settle();
-        expect(count()).toBe("3 / 3");
-        expect(button(el, "Page suivante").disabled).toBe(true);
+        expect(count(el)).toBe("3 / 3");
+        expect(button(el, "Next page").disabled).toBe(true);
 
-        button(el, "Page précédente").click();
+        button(el, "Previous page").click();
         await settle();
-        expect(count()).toBe("2 / 3");
-        expect(button(el, "Page précédente").disabled).toBe(false);
+        expect(count(el)).toBe("2 / 3");
+        expect(button(el, "Previous page").disabled).toBe(false);
     });
 
     it("prints the document", async () => {
@@ -102,7 +124,7 @@ describe("pat-pdf-viewer", () => {
             <div class="pat-pdf-viewer"><a href="${PDF_URL}">PDF</a></div>
         `);
 
-        button(el, "Imprimer le document").click();
+        button(el, "Print").click();
         await settle();
 
         expect(printJS).toHaveBeenCalledWith({ printable: PDF_URL, type: "pdf" });
