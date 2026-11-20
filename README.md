@@ -51,6 +51,7 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-button-hover-bg` | Background of a button under the pointer. |
 | `--pdf-viewer-focus` | Color of the focus outline. |
 | `--pdf-viewer-page-shadow` | Shadow of a page. |
+| `--pdf-viewer-page-radius` | Corner radius of a page. |
 | `--pdf-viewer-fullscreen-z-index` | Stack level of the full screen when the browser refuses the Fullscreen API. |
 
 Bootstrap styles all links and buttons outside a layer. So the color, the

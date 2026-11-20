@@ -30,7 +30,7 @@ const Toolbar = ({
 
     return (
         <div className="pdf-viewer-toolbar" role="toolbar" aria-label={t("Document toolbar")}>
-            <div className="pdf-viewer-toolbar-group">
+            <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-start">
                 {show("download") && (
                     <a
                         className="pdf-viewer-button"
@@ -48,7 +48,7 @@ const Toolbar = ({
                 )}
             </div>
 
-            <div className="pdf-viewer-toolbar-group">
+            <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-pages">
                 <Button
                     label={t("Previous page")}
                     icon="chevron-left"
@@ -71,7 +71,7 @@ const Toolbar = ({
                 />
             </div>
 
-            <div className="pdf-viewer-toolbar-group">
+            <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-end">
                 {show("rotate") && (
                     <Button label={t("Rotate")} icon="arrow-clockwise" onClick={actions.rotate} />
                 )}
