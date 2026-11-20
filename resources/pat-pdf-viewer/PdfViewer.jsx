@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { SPINNER_URL, WORKER_SRC } from "./assets";
+import { PDFJS_OPTIONS, SPINNER_URL, WORKER_SRC } from "./assets";
 import Pages from "./Pages";
 import Toolbar from "./Toolbar";
 import { useBoxSize } from "./useBoxSize";
@@ -239,6 +239,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             >
                 <Document
                     file={file}
+                    options={PDFJS_OPTIONS}
                     inputRef={pagesRef}
                     className="pdf-viewer-pages"
                     suspense={false}
