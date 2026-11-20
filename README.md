@@ -130,7 +130,7 @@ The built bundle is in `src/imio/pdfviewer/browser/static/bundles/` and is
 committed: installing the Python package does not need Node.js. CI rebuilds it
 and fails if the committed files are not up to date.
 
-JavaScript (Node.js 22.13 or later):
+JavaScript (Node.js 22.18 or later in the 22 series, or 24.11 or later):
 
 ```sh
 npm install
