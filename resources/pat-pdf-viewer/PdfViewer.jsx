@@ -6,7 +6,17 @@ import { SPINNER_URL, WORKER_SRC } from "./assets";
 import Pages from "./Pages";
 import Toolbar from "./Toolbar";
 import { useBoxSize } from "./useBoxSize";
-import { MAX_SCALE, MIN_SCALE, fitScale, widestPage, zoomIn, zoomOut } from "./zoom";
+import { useFullscreen } from "./useFullscreen";
+import { usePinchZoom } from "./usePinchZoom";
+import {
+    MAX_SCALE,
+    MIN_SCALE,
+    clampScale,
+    fitScale,
+    widestPage,
+    zoomIn,
+    zoomOut,
+} from "./zoom";
 
 // react-pdf reads the worker URL in the module that renders <Document>.
 pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
@@ -47,6 +57,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const [rotation, setRotation] = useState(0);
     const [zoom, setZoom] = useState({ mode: "page-width", scale: 1 });
     const box = useBoxSize(viewportRef);
+    const fullscreen = useFullscreen(rootRef);
 
     const numPages = sizes?.length ?? 0;
     const single = display === "single";
@@ -125,6 +136,34 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
 
     const setScale = (next) => setZoom({ mode: "custom", scale: next });
 
+    usePinchZoom(viewportRef, {
+        // Scale the pages with CSS while the fingers move. Render them at the end.
+        onPinch: (ratio) => {
+            const viewport = viewportRef.current;
+            const pages = pagesRef.current;
+            if (!pages) {
+                return;
+            }
+            const x = viewport.scrollLeft + viewport.clientWidth / 2;
+            const y = viewport.scrollTop + viewport.clientHeight / 2;
+            pages.style.transformOrigin = `${x}px ${y}px`;
+            pages.style.transform = `scale(${ratio})`;
+        },
+        onPinchEnd: (ratio) => {
+            if (pagesRef.current) {
+                pagesRef.current.style.transform = "";
+            }
+            setScale(clampScale(scale * ratio));
+        },
+        onDoubleTap: () => {
+            if (zoom.mode === "page-width") {
+                setScale(clampScale(scale * 2));
+            } else {
+                setZoom({ mode: "page-width", scale });
+            }
+        },
+    });
+
     const actions = {
         previous: () => goToPage(page - 1),
         next: () => goToPage(page + 1),
@@ -137,6 +176,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             setZoom({ mode: zoom.mode === "page-width" ? "page-fit" : "page-width", scale }),
         zoomIn: () => setScale(zoomIn(scale)),
         zoomOut: () => setScale(zoomOut(scale)),
+        toggleFullscreen: fullscreen.toggle,
     };
 
     // The keys work when the focus is in the viewer. In continuous mode, the
@@ -166,7 +206,13 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     return (
         <section
             ref={rootRef}
-            className="pdf-viewer"
+            className={[
+                "pdf-viewer",
+                fullscreen.mode && "pdf-viewer-fullscreen",
+                fullscreen.mode === "fallback" && "pdf-viewer-fullscreen-fallback",
+            ]
+                .filter(Boolean)
+                .join(" ")}
             aria-label={t("PDF document")}
             onKeyDown={onKeyDown}
         >
@@ -181,6 +227,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                     scale={scale}
                     canZoomIn={scale < MAX_SCALE}
                     canZoomOut={scale > MIN_SCALE}
+                    isFullscreen={fullscreen.mode !== null}
                     actions={actions}
                 />
             )}

@@ -23,6 +23,7 @@ const Toolbar = ({
     scale,
     canZoomIn,
     canZoomOut,
+    isFullscreen,
     actions,
 }) => {
     const show = (name) => buttons.includes(name);
@@ -105,6 +106,20 @@ const Toolbar = ({
                         />
                     </>
                 )}
+                {show("fullscreen") &&
+                    (isFullscreen ? (
+                        <Button
+                            label={t("Exit full screen")}
+                            icon="fullscreen-exit"
+                            onClick={actions.toggleFullscreen}
+                        />
+                    ) : (
+                        <Button
+                            label={t("Full screen")}
+                            icon="arrows-fullscreen"
+                            onClick={actions.toggleFullscreen}
+                        />
+                    ))}
             </div>
         </div>
     );

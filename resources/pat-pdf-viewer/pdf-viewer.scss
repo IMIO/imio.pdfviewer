@@ -13,6 +13,7 @@
 //   --pdf-viewer-button-hover-bg  background of a button under the pointer
 //   --pdf-viewer-focus            color of the focus outline
 //   --pdf-viewer-page-shadow      shadow of a page
+//   --pdf-viewer-fullscreen-z-index  stack level in full screen without the Fullscreen API
 
 @layer imio-pdfviewer {
     .pdf-viewer {
@@ -149,5 +150,22 @@
     .pdf-viewer-error {
         margin: 2rem 1rem;
         text-align: center;
+    }
+
+    .pdf-viewer.pdf-viewer-fullscreen {
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    // The browser refused the Fullscreen API: cover the window.
+    .pdf-viewer.pdf-viewer-fullscreen-fallback {
+        position: fixed;
+        inset: 0;
+        z-index: var(--pdf-viewer-fullscreen-z-index, 1050);
+    }
+
+    .pdf-viewer-scroll-lock {
+        overflow: hidden;
     }
 }

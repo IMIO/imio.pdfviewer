@@ -123,4 +123,43 @@ describe("pat-pdf-viewer", () => {
         button("Print").should("not.exist");
         button("Rotate").should("not.exist");
     });
+
+    it("shows the viewer in full screen", () => {
+        cy.visitViewer();
+        button("Full screen").click();
+        cy.get(".pdf-viewer").should("have.class", "pdf-viewer-fullscreen");
+        button("Exit full screen").click();
+        cy.get(".pdf-viewer").should("not.have.class", "pdf-viewer-fullscreen");
+    });
+
+    it("zooms with a pinch", () => {
+        cy.visitViewer();
+        cy.get(".pdf-viewer canvas").should("be.visible");
+        const fingers = (spread) => [
+            { identifier: 1, clientX: 400 - spread, clientY: 400 },
+            { identifier: 2, clientX: 400 + spread, clientY: 400 },
+        ];
+        zoomLevel()
+            .invoke("text")
+            .then((before) => {
+                viewport()
+                    .trigger("touchstart", { touches: fingers(50) })
+                    .trigger("touchmove", { touches: fingers(100) })
+                    .trigger("touchend", { touches: [], changedTouches: fingers(100) });
+                zoomLevel().invoke("text").should("not.equal", before);
+            });
+    });
+
+    it("fits the width again after a double tap", () => {
+        cy.visitViewer();
+        button("Zoom in").click();
+        button("Fit to width").should("exist");
+        const finger = [{ identifier: 1, clientX: 300, clientY: 300 }];
+        viewport()
+            .trigger("touchstart", { touches: finger })
+            .trigger("touchend", { touches: [], changedTouches: finger })
+            .trigger("touchstart", { touches: finger })
+            .trigger("touchend", { touches: [], changedTouches: finger });
+        button("Fit to page").should("exist");
+    });
 });
