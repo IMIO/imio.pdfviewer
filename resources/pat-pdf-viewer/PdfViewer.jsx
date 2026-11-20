@@ -134,6 +134,14 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         viewport.scrollTop = el.offsetTop - SCROLL_MARGIN;
     };
 
+    // react-pdf keeps the first onItemClick callback. This callback does not
+    // change. It calls the goToPage function of the last render.
+    const goToPageRef = useRef(goToPage);
+    useLayoutEffect(() => {
+        goToPageRef.current = goToPage;
+    });
+    const onItemClick = useCallback(({ pageNumber }) => goToPageRef.current(pageNumber), []);
+
     const setScale = (next) => setZoom({ mode: "custom", scale: next });
 
     usePinchZoom(viewportRef, {
@@ -252,7 +260,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
                     error={<ErrorMessage file={file} t={t} />}
                     onLoadSuccess={onLoadSuccess}
                     onLoadError={() => setFailed(true)}
-                    onItemClick={({ pageNumber }) => goToPage(pageNumber)}
+                    onItemClick={onItemClick}
                     externalLinkTarget="_blank"
                     externalLinkRel="noopener noreferrer"
                 >
