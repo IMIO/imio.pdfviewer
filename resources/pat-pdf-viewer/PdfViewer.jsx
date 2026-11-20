@@ -55,10 +55,11 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const rootRef = useRef(null);
     const viewportRef = useRef(null);
     const pagesRef = useRef(null);
-    // The place of the reader: the page at one third of the viewport height
-    // and the scrolled part of it. The viewer keeps this place when the size
-    // of the pages changes. After the viewer scrolls to a place, `top` is the
-    // scroll position of this place.
+    // The place of the reader: the page at one third of the viewport height,
+    // the scrolled part of it (`offset`) and the scrolled part of the gap
+    // above it in pixels (`gap`, 0 or less). The viewer keeps this place when
+    // the size of the pages changes. After the viewer scrolls to a place,
+    // `top` is the scroll position of this place.
     const anchorRef = useRef(null);
     const frameRef = useRef(0);
     // The open document and the page sizes that the viewer read, by page index.
@@ -173,9 +174,12 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         if (!current || !current.offsetHeight) {
             return null;
         }
+        // The gap between the pages does not change with the scale.
+        const above = viewport.scrollTop - current.offsetTop;
         anchorRef.current = {
             page: Number(current.dataset.pageNumber),
-            offset: (viewport.scrollTop - current.offsetTop) / current.offsetHeight,
+            offset: Math.max(above, 0) / current.offsetHeight,
+            gap: Math.min(above, 0),
         };
         return anchorRef.current;
     };
@@ -195,7 +199,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         if (!viewport || !el) {
             return;
         }
-        const top = el.offsetTop + anchor.offset * el.offsetHeight;
+        const top = el.offsetTop + anchor.offset * el.offsetHeight + anchor.gap;
         if (Math.abs(viewport.scrollTop - top) >= 1) {
             viewport.scrollTop = top;
         }
@@ -228,14 +232,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             viewport.scrollTop = 0;
             return;
         }
-        const el = pageElement(target);
-        if (!el) {
-            return;
-        }
-        showAnchor({
-            page: target,
-            offset: el.offsetHeight ? -SCROLL_MARGIN / el.offsetHeight : 0,
-        });
+        showAnchor({ page: target, offset: 0, gap: -SCROLL_MARGIN });
     };
 
     // react-pdf keeps the first onItemClick callback. This callback does not
