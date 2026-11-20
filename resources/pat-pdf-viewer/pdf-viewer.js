@@ -15,6 +15,11 @@ parser.addArgument("url", null);
 parser.addArgument("display", null);
 // A list, or a text with names separated by spaces or commas.
 parser.addArgument("buttons", null);
+// URL of an HTML fragment with the text version of the PDF.
+parser.addArgument("text-url", null);
+
+// The child element with the text version of the PDF.
+const TEXT_SELECTOR = ":scope > [data-pdf-viewer-text]";
 
 class Pattern extends BasePattern {
     static name = "pdf-viewer";
@@ -26,9 +31,16 @@ class Pattern extends BasePattern {
     async init() {
         import("./pdf-viewer.scss");
 
+        // An element without text is not a text version.
+        const textEl = this.el.querySelector(TEXT_SELECTOR);
+        const text = textEl?.textContent.trim() ? textEl : null;
         // The `url` option comes first. The child link is the fallback.
         // A link also works without JavaScript and needs no escaping.
-        const url = this.options.url || this.el.querySelector("a[href]")?.href;
+        // A link in the text version is not the PDF link.
+        const link = [...this.el.querySelectorAll("a[href]")].find(
+            (el) => !textEl?.contains(el),
+        );
+        const url = this.options.url || link?.href;
         if (!url) {
             log.warn("No PDF url: set the `url` option or add a child <a href>.", this.el);
             return;
@@ -42,7 +54,7 @@ class Pattern extends BasePattern {
         const showFallback = async () => {
             const t = await translations;
             if (!this.#destroyed) {
-                renderFallback(this.el, { file: url, t });
+                renderFallback(this.el, { file: url, t, text });
             }
         };
         if (!isSupported()) {
@@ -69,9 +81,19 @@ class Pattern extends BasePattern {
             return;
         }
         const [{ createRoot }, { createElement }, { default: PdfViewer }, t] = modules;
-        // The React root replaces the fallback link.
+        // The React root replaces the fallback link. The viewer puts the
+        // text version in its text tab.
+        text?.remove();
         this.root = createRoot(this.el);
-        this.root.render(createElement(PdfViewer, { file: url, t, ...options }));
+        this.root.render(
+            createElement(PdfViewer, {
+                file: url,
+                t,
+                text,
+                textUrl: this.options.textUrl || null,
+                ...options,
+            }),
+        );
     }
 
     destroy() {

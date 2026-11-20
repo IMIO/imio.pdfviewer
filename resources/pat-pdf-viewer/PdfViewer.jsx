@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { PDFJS_OPTIONS, SPINNER_URL, WORKER_SRC } from "./assets";
 import Icon from "./Icon";
 import Pages from "./Pages";
+import Tabs, { PDF_TAB, TEXT_TAB, readTab, saveTab } from "./Tabs";
+import TextPanel from "./TextPanel";
 import Toolbar from "./Toolbar";
 import { useBoxSize } from "./useBoxSize";
 import { useFullscreen } from "./useFullscreen";
@@ -64,7 +74,18 @@ const ErrorMessage = ({ file, t }) => (
     </div>
 );
 
-const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity }) => {
+// `text` is an element with the text version of the PDF. `textUrl` is the
+// URL of an HTML fragment with that text. With one of them, the viewer has
+// two tabs: the PDF and its text version.
+const PdfViewer = ({
+    file,
+    display = "continuous",
+    buttons = [],
+    text = null,
+    textUrl = null,
+    t = identity,
+}) => {
+    const uid = useId();
     const rootRef = useRef(null);
     const viewportRef = useRef(null);
     const pagesRef = useRef(null);
@@ -83,6 +104,12 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     const [zoom, setZoom] = useState({ mode: "page-width", scale: 1 });
     const box = useBoxSize(viewportRef);
     const fullscreen = useFullscreen(rootRef);
+    const hasText = Boolean(text || textUrl);
+    // The PDF tab opens first. The last tab of the reader replaces it.
+    const [tab, setTab] = useState(() => (hasText && readTab()) || PDF_TAB);
+    const textActive = hasText && tab === TEXT_TAB;
+    // The PDF loads when its tab opens for the first time.
+    const [pdfOpened, setPdfOpened] = useState(!textActive);
 
     const { pdf } = doc;
     const numPages = pdf?.numPages ?? 0;
@@ -233,6 +260,27 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         }
     }, [scale, rotation, sizes]);
 
+    // A hidden viewport can lose its scroll position. Show the same place
+    // again when the PDF tab opens.
+    useLayoutEffect(() => {
+        if (!textActive && anchorRef.current) {
+            showAnchor(anchorRef.current);
+        }
+    }, [textActive]);
+
+    const selectTab = (name) => {
+        if (name === tab) {
+            return;
+        }
+        // Keep the place of the reader in the PDF.
+        saveAnchor();
+        setTab(name);
+        saveTab(name);
+        if (name === PDF_TAB) {
+            setPdfOpened(true);
+        }
+    };
+
     const goToPage = (number) => {
         const target = Math.min(Math.max(number, 1), numPages);
         const viewport = viewportRef.current;
@@ -311,7 +359,7 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
     // The keys work when the focus is in the viewer. In continuous mode, the
     // browser scrolls with the arrows and the page keys.
     const onKeyDown = (event) => {
-        if (event.ctrlKey || event.metaKey || event.altKey || !ready) {
+        if (event.ctrlKey || event.metaKey || event.altKey || !ready || textActive) {
             return;
         }
         const keys = {
@@ -332,11 +380,50 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
         }
     };
 
+    const isFullscreen = fullscreen.mode !== null;
+    const tabs = [
+        {
+            name: PDF_TAB,
+            label: t("Document"),
+            icon: "file-earmark-pdf",
+            id: `${uid}-pdf-tab`,
+            panel: `${uid}-pdf-panel`,
+        },
+        {
+            name: TEXT_TAB,
+            label: t("Text version"),
+            icon: "file-earmark-text",
+            id: `${uid}-text-tab`,
+            panel: `${uid}-text-panel`,
+        },
+    ];
+    // The text tab needs no loaded PDF for its buttons.
+    const toolbarShown = textActive
+        ? ["download", "print"].some((name) => buttons.includes(name)) ||
+          (isFullscreen && buttons.includes("fullscreen"))
+        : ready;
+    const toolbar = toolbarShown && (
+        <Toolbar
+            t={t}
+            file={file}
+            buttons={buttons}
+            pdfControls={!textActive}
+            page={page}
+            numPages={numPages}
+            zoom={zoom}
+            canZoomIn={scale < MAX_SCALE}
+            canZoomOut={scale > MIN_SCALE}
+            isFullscreen={isFullscreen}
+            actions={actions}
+        />
+    );
+
     return (
         <section
             ref={rootRef}
             className={[
                 "pdf-viewer",
+                textActive && "pdf-viewer-text-active",
                 fullscreen.mode && "pdf-viewer-fullscreen",
                 fullscreen.mode === "fallback" && "pdf-viewer-fullscreen-fallback",
             ]
@@ -345,62 +432,74 @@ const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity })
             aria-label={t("PDF document")}
             onKeyDown={onKeyDown}
         >
-            {ready && (
-                <Toolbar
-                    t={t}
-                    file={file}
-                    buttons={buttons}
-                    page={page}
-                    numPages={numPages}
-                    zoom={zoom}
-                    canZoomIn={scale < MAX_SCALE}
-                    canZoomOut={scale > MIN_SCALE}
-                    isFullscreen={fullscreen.mode !== null}
-                    actions={actions}
-                />
+            {hasText ? (
+                <div className="pdf-viewer-header">
+                    <Tabs t={t} tabs={tabs} active={tab} onChange={selectTab} />
+                    {toolbar}
+                </div>
+            ) : (
+                toolbar
             )}
             <div
                 ref={viewportRef}
                 className="pdf-viewer-viewport"
                 tabIndex={0}
                 onScroll={onScroll}
+                {...(hasText && {
+                    "id": tabs[0].panel,
+                    "role": "tabpanel",
+                    "aria-labelledby": tabs[0].id,
+                    "hidden": textActive,
+                })}
             >
-                <Document
-                    file={file}
-                    options={PDFJS_OPTIONS}
-                    inputRef={pagesRef}
-                    className="pdf-viewer-pages"
-                    suspense={false}
-                    loading={
-                        <img
-                            className="pdf-viewer-spinner"
-                            src={SPINNER_URL}
-                            alt={t("Loading the document…")}
-                        />
-                    }
-                    error={<ErrorMessage file={file} t={t} />}
-                    onLoadSuccess={onLoadSuccess}
-                    onLoadError={() => setFailed(true)}
-                    onItemClick={onItemClick}
-                    externalLinkTarget="_blank"
-                    externalLinkRel="noopener noreferrer"
-                >
-                    {failed ? (
-                        <ErrorMessage file={file} t={t} />
-                    ) : (
-                        sizes && (
-                            <Pages
-                                viewportRef={viewportRef}
-                                sizes={sizes}
-                                display={display}
-                                page={page}
-                                scale={scale}
-                                rotation={rotation}
+                {pdfOpened && (
+                    <Document
+                        file={file}
+                        options={PDFJS_OPTIONS}
+                        inputRef={pagesRef}
+                        className="pdf-viewer-pages"
+                        suspense={false}
+                        loading={
+                            <img
+                                className="pdf-viewer-spinner"
+                                src={SPINNER_URL}
+                                alt={t("Loading the document…")}
                             />
-                        )
-                    )}
-                </Document>
+                        }
+                        error={<ErrorMessage file={file} t={t} />}
+                        onLoadSuccess={onLoadSuccess}
+                        onLoadError={() => setFailed(true)}
+                        onItemClick={onItemClick}
+                        externalLinkTarget="_blank"
+                        externalLinkRel="noopener noreferrer"
+                    >
+                        {failed ? (
+                            <ErrorMessage file={file} t={t} />
+                        ) : (
+                            sizes && (
+                                <Pages
+                                    viewportRef={viewportRef}
+                                    sizes={sizes}
+                                    display={display}
+                                    page={page}
+                                    scale={scale}
+                                    rotation={rotation}
+                                />
+                            )
+                        )}
+                    </Document>
+                )}
             </div>
+            {hasText && (
+                <TextPanel
+                    t={t}
+                    id={tabs[1].panel}
+                    labelledBy={tabs[1].id}
+                    active={textActive}
+                    text={text}
+                    textUrl={textUrl}
+                />
+            )}
         </section>
     );
 };

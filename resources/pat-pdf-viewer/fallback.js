@@ -2,8 +2,9 @@ import { resolveIcon } from "./icons";
 
 // The frame that replaces the viewer when the browser cannot show the PDF:
 // a short explanation and a download button. It uses the DOM only, so it
-// also works when the viewer code cannot load.
-export const renderFallback = (el, { file, t }) => {
+// also works when the viewer code cannot load. `text` is the element with
+// the text version of the PDF. It stays in the page, after the frame.
+export const renderFallback = (el, { file, t, text = null }) => {
     const frame = document.createElement("div");
     frame.className = "pdf-viewer-fallback";
     frame.innerHTML = `
@@ -29,7 +30,7 @@ export const renderFallback = (el, { file, t }) => {
     frame.querySelector(".pdf-viewer-fallback-label").textContent = t(
         "Download the document",
     );
-    el.replaceChildren(frame);
+    el.replaceChildren(frame, ...(text ? [text] : []));
 
     const [pdfIcon, downloadIcon] = frame.querySelectorAll(".pdf-viewer-icon");
     resolveIcon("file-earmark-pdf").then((svg) => (pdfIcon.innerHTML = svg));

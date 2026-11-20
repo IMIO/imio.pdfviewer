@@ -9,6 +9,10 @@ layer (selection, screen readers), clickable links, continuous or single-page
 display, fit to width or to page, zoom, rotation, print, download and full
 screen. On touch screens, a pinch zooms the PDF.
 
+A PDF that is a scan has no text for a screen reader. The page can give a
+text version of the PDF in HTML. The viewer then has two tabs: "Document"
+and "Text version".
+
 ## Usage
 
 Install the add-on (`imio.pdfviewer:default` profile), then add the pattern
@@ -20,12 +24,33 @@ to a template:
 </div>
 ```
 
-The options (`url`, `display`, `buttons`) are in
+To add a text version, put its HTML in a child element with the
+`data-pdf-viewer-text` attribute, or give its URL in the `text-url` option:
+
+```html
+<div class="pat-pdf-viewer" data-pat-pdf-viewer='{"text-url": "/doc/@@text-version"}'>
+  <a href="https://site/doc/@@download/file/name.pdf">Download the document</a>
+  <div data-pdf-viewer-text>
+    <h2>Decision of the council</h2>
+    <p>…</p>
+  </div>
+</div>
+```
+
+Without JavaScript, the text in the page is content of the page. The viewer
+moves it into its "Text version" tab. It gets the text of `text-url` only
+when the reader asks for it. The viewer inserts the HTML as it is: the
+server must give safe HTML.
+
+The options (`url`, `display`, `buttons`, `text-url`) and the rules for the
+text version are in
 [the pattern documentation](resources/pat-pdf-viewer/documentation.md).
 
 To try the viewer on a site, open
-`@@pdfviewer-demo?url=<URL of a PDF>&display=single&buttons=zoom`
-(`display` and `buttons` are optional).
+`@@pdfviewer-demo?url=<URL of a PDF>&display=single&buttons=zoom&text=inline`
+(`display`, `buttons` and `text` are optional). `text` adds a sample text
+version: `inline` (in the page), `url` (from `@@pdfviewer-demo-text`) or
+`both` (the first page in the page, the full text from the URL).
 
 ## Site settings
 
@@ -50,7 +75,9 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-toolbar-border` | Line under the toolbar. |
 | `--pdf-viewer-sticky-top` | Space above the toolbar when it sticks to the top of the window, for a fixed site header (default `0`). |
 | `--pdf-viewer-button-hover-bg` | Background of a button under the pointer. |
-| `--pdf-viewer-divider` | Line between the groups of toolbar buttons. |
+| `--pdf-viewer-divider` | Line between the groups of toolbar buttons, between the sections and around the table cells of the text version. |
+| `--pdf-viewer-tab-active-color` | Line under the selected tab (default: the text color). |
+| `--pdf-viewer-text-max-width` | Width of the column of the text version (default `70ch`). |
 | `--pdf-viewer-focus` | Color of the focus outline. |
 | `--pdf-viewer-page-shadow` | Shadow of a page. |
 | `--pdf-viewer-page-radius` | Corner radius of a page. |
@@ -58,9 +85,18 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-download-bg` | Background of the download button in the fallback frame. |
 | `--pdf-viewer-download-color` | Text color of that button. |
 
+The tab list uses the properties of the toolbar: `--pdf-viewer-toolbar-bg`,
+`--pdf-viewer-toolbar-border`, `--pdf-viewer-button-hover-bg` and
+`--pdf-viewer-focus`. The text version uses `--pdf-viewer-color`,
+`--pdf-viewer-bg` and `--pdf-viewer-gap`. The class names of the tabs and of
+the text version are in
+[the pattern documentation](resources/pat-pdf-viewer/documentation.md).
+
 Bootstrap styles all links and buttons outside a layer. So the color, the
 underline and the corners of the toolbar buttons are set outside the layer
 too, with `.pdf-viewer .pdf-viewer-button`: change them with the properties.
+The corners of the button of the text version and the borders of its table
+cells are outside the layer for the same reason.
 
 Without these properties, the viewer uses the Bootstrap variables of the
 page (`--bs-body-color`, `--bs-tertiary-bg`…), so `data-bs-theme="dark"`
@@ -81,7 +117,8 @@ pdf.js comes from its legacy build: Safari 18 (iOS 18), Chrome 125 and
 later. The pattern checks a few features first. A browser without them,
 or a browser that cannot load the viewer code, gets a frame that explains
 the problem, with a button to download the PDF. A PDF that cannot load
-gets the same frame.
+gets the same frame. A text version in the page stays readable in the two
+cases.
 
 ## Why Module Federation
 

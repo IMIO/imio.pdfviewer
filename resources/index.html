@@ -23,6 +23,46 @@
       >
         <a href="/sample.pdf">Download the document</a>
       </div>
+
+      <h2>Text version in the page</h2>
+      <div class="pat-pdf-viewer">
+        <a href="/sample.pdf">Download the document</a>
+        <div data-pdf-viewer-text>
+          <section aria-label="Page 1">
+            <h3>imio.pdfviewer</h3>
+            <p>Sample document - page 1 of 3</p>
+            <p>
+              This text is in the page. Without JavaScript, it shows under the
+              link. It has <a href="https://www.imio.be">a link</a>, which is
+              not the PDF link.
+            </p>
+          </section>
+          <section aria-label="Page 2">
+            <h3>imio.pdfviewer</h3>
+            <p>Sample document - page 2 of 3</p>
+          </section>
+          <section aria-label="Page 3">
+            <h3>imio.pdfviewer</h3>
+            <p>Sample document - page 3 of 3</p>
+          </section>
+        </div>
+      </div>
+
+      <h2>Text version from a URL</h2>
+      <div class="pat-pdf-viewer" data-pat-pdf-viewer='{"text-url": "/sample-text.html"}'>
+        <a href="/sample.pdf">Download the document</a>
+      </div>
+
+      <h2>First page in the page, full text from a URL</h2>
+      <div class="pat-pdf-viewer" data-pat-pdf-viewer='{"text-url": "/sample-text.html"}'>
+        <a href="/sample.pdf">Download the document</a>
+        <div data-pdf-viewer-text>
+          <section aria-label="Page 1">
+            <h3>imio.pdfviewer</h3>
+            <p>Sample document - page 1 of 3</p>
+          </section>
+        </div>
+      </div>
     </main>
   </body>
 </html>

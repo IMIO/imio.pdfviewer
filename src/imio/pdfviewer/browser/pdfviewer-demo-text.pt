@@ -1,0 +1,50 @@
+<tal:pages xmlns:tal="http://xml.zope.org/namespaces/tal"
+           repeat="number python:range(1, options['pages'] + 1)"
+>
+  <section tal:attributes="
+             aria-label string:Page ${number};
+           ">
+    <h3>imio.pdfviewer</h3>
+    <p>Sample document - page
+      <tal:number replace="number" />
+      of 3</p>
+    <p tal:condition="python:number == 1">
+      This text is the sample text version of a PDF. A server makes such a
+      text from the pages of the PDF. A screen reader reads it when the PDF is
+      a scan.
+    </p>
+    <table tal:condition="python:number == 2">
+      <caption>A table of the text version</caption>
+      <thead>
+        <tr>
+          <th scope="col">Article</th>
+          <th scope="col">Description</th>
+          <th scope="col">Budget of the year</th>
+          <th scope="col">Budget of the next year</th>
+          <th scope="col">Difference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>104/123-02</td>
+          <td>Office supplies of the administration</td>
+          <td>12&#160;500,00&#160;&euro;</td>
+          <td>13&#160;000,00&#160;&euro;</td>
+          <td>500,00&#160;&euro;</td>
+        </tr>
+        <tr>
+          <td>421/140-06</td>
+          <td>Maintenance of the roads of the municipality</td>
+          <td>250&#160;000,00&#160;&euro;</td>
+          <td>245&#160;000,00&#160;&euro;</td>
+          <td>-5&#160;000,00&#160;&euro;</td>
+        </tr>
+      </tbody>
+    </table>
+    <ul tal:condition="python:number == 3">
+      <li>A first item.</li>
+      <li>A second item, with
+        <a href="https://www.imio.be">a link</a>.</li>
+    </ul>
+  </section>
+</tal:pages>

@@ -22,6 +22,10 @@ export const useBoxSize = (ref) => {
             return undefined;
         }
         const update = () => {
+            // A hidden element has no box. Keep its last size.
+            if (!el.clientWidth && !el.clientHeight) {
+                return;
+            }
             const next = measure(el);
             setSize((previous) =>
                 previous.width === next.width && previous.height === next.height
