@@ -1,0 +1,1 @@
+The viewer shows a text version of the PDF in a "Text version" tab, next to the "Document" tab: a screen reader can read a PDF that is a scan. The page gives the text in a child element with the `data-pdf-viewer-text` attribute, or at the URL of the new `text-url` option. The tabs follow the WAI-ARIA tabs pattern and the browser keeps the last tab of the reader. @duchenean

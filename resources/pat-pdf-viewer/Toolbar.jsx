@@ -12,11 +12,14 @@ const Button = ({ label, icon, ...props }) => (
     </button>
 );
 
-// The toolbar. `buttons` gives the optional buttons to show.
+// The toolbar. `buttons` gives the optional buttons to show. Without
+// `pdfControls`, the toolbar shows only the buttons that also work when the
+// reader does not see the pages: download, print and the exit of the full screen.
 const Toolbar = ({
     t,
     file,
     buttons,
+    pdfControls = true,
     page,
     numPages,
     zoom,
@@ -47,31 +50,33 @@ const Toolbar = ({
                 )}
             </div>
 
-            <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-pages">
-                <Button
-                    label={t("Previous page")}
-                    icon="chevron-left"
-                    onClick={actions.previous}
-                    disabled={page <= 1}
-                />
-                <span className="pdf-viewer-page-count" aria-live="polite">
-                    <span aria-hidden="true">
-                        {page} / {numPages}
+            {pdfControls && (
+                <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-pages">
+                    <Button
+                        label={t("Previous page")}
+                        icon="chevron-left"
+                        onClick={actions.previous}
+                        disabled={page <= 1}
+                    />
+                    <span className="pdf-viewer-page-count" aria-live="polite">
+                        <span aria-hidden="true">
+                            {page} / {numPages}
+                        </span>
+                        <span className="pdf-viewer-sr-only">
+                            {t("Page ${page} of ${count}", { page, count: numPages })}
+                        </span>
                     </span>
-                    <span className="pdf-viewer-sr-only">
-                        {t("Page ${page} of ${count}", { page, count: numPages })}
-                    </span>
-                </span>
-                <Button
-                    label={t("Next page")}
-                    icon="chevron-right"
-                    onClick={actions.next}
-                    disabled={page >= numPages}
-                />
-            </div>
+                    <Button
+                        label={t("Next page")}
+                        icon="chevron-right"
+                        onClick={actions.next}
+                        disabled={page >= numPages}
+                    />
+                </div>
+            )}
 
             <div className="pdf-viewer-toolbar-group pdf-viewer-toolbar-end">
-                {show("rotate") && (
+                {pdfControls && show("rotate") && (
                     <div className="pdf-viewer-toolbar-cluster">
                         <Button
                             label={t("Rotate")}
@@ -80,7 +85,7 @@ const Toolbar = ({
                         />
                     </div>
                 )}
-                {show("fit") && (
+                {pdfControls && show("fit") && (
                     <div className="pdf-viewer-toolbar-cluster">
                         {zoom.mode === "page-width" ? (
                             <Button
@@ -97,7 +102,7 @@ const Toolbar = ({
                         )}
                     </div>
                 )}
-                {show("zoom") && (
+                {pdfControls && show("zoom") && (
                     <div className="pdf-viewer-toolbar-cluster">
                         <Button
                             label={t("Zoom out")}
@@ -113,7 +118,7 @@ const Toolbar = ({
                         />
                     </div>
                 )}
-                {show("fullscreen") && (
+                {show("fullscreen") && (pdfControls || isFullscreen) && (
                     <div className="pdf-viewer-toolbar-cluster">
                         {/* One button for the two states, so that it keeps the focus. */}
                         <Button

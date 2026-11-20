@@ -20,7 +20,13 @@ msgstr ""
 msgid "Display mode"
 msgstr ""
 
+msgid "Document"
+msgstr ""
+
 msgid "Document toolbar"
+msgstr ""
+
+msgid "Document views"
 msgstr ""
 
 msgid "Download"
@@ -47,7 +53,13 @@ msgstr ""
 msgid "How the viewer shows the pages."
 msgstr ""
 
+msgid "Load the full text"
+msgstr ""
+
 msgid "Loading the document…"
+msgstr ""
+
+msgid "Loading the text version…"
 msgstr ""
 
 msgid "Next page"
@@ -77,13 +89,22 @@ msgstr ""
 msgid "Single page"
 msgstr ""
 
+msgid "Text version"
+msgstr ""
+
 msgid "The buttons that the toolbar shows. The page buttons always show."
 msgstr ""
 
 msgid "The document cannot be displayed."
 msgstr ""
 
+msgid "The text version cannot be loaded."
+msgstr ""
+
 msgid "Toolbar buttons"
+msgstr ""
+
+msgid "Try again"
 msgstr ""
 
 msgid "Zoom"

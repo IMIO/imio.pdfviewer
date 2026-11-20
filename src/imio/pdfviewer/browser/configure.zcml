@@ -27,6 +27,14 @@
       />
 
   <browser:page
+      name="pdfviewer-demo-text"
+      for="*"
+      class=".demo.DemoTextView"
+      permission="zope2.View"
+      layer="imio.pdfviewer.interfaces.IImioPdfviewerLayer"
+      />
+
+  <browser:page
       name="pdfviewer-settings"
       for="plone.base.interfaces.IPloneSiteRoot"
       class=".controlpanel.PdfViewerSettingsView"

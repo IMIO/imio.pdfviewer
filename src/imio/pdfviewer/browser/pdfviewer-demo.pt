@@ -17,6 +17,13 @@
           <a tal:attributes="
                href request/form/url|nothing;
              ">PDF</a>
+          <div data-pdf-viewer-text
+               tal:define="
+                 text view/inline_text;
+               "
+               tal:condition="text"
+               tal:content="structure text"
+          ></div>
         </div>
       </metal:block>
     </metal:content-core>

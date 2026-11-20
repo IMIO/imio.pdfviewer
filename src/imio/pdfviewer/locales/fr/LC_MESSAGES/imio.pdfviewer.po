@@ -21,8 +21,14 @@ msgstr "Défilement continu"
 msgid "Display mode"
 msgstr "Mode d'affichage"
 
+msgid "Document"
+msgstr "Document"
+
 msgid "Document toolbar"
 msgstr "Barre d'outils du document"
+
+msgid "Document views"
+msgstr "Vues du document"
 
 msgid "Download"
 msgstr "Télécharger le document"
@@ -48,8 +54,14 @@ msgstr "Plein écran"
 msgid "How the viewer shows the pages."
 msgstr "Comment la visionneuse affiche les pages."
 
+msgid "Load the full text"
+msgstr "Charger le texte complet"
+
 msgid "Loading the document…"
 msgstr "Chargement du document…"
+
+msgid "Loading the text version…"
+msgstr "Chargement de la version texte…"
 
 msgid "Next page"
 msgstr "Page suivante"
@@ -78,14 +90,23 @@ msgstr "Tourner la page"
 msgid "Single page"
 msgstr "Page par page"
 
+msgid "Text version"
+msgstr "Version texte"
+
 msgid "The buttons that the toolbar shows. The page buttons always show."
 msgstr "Les boutons que la barre d'outils affiche. Les boutons de page sont toujours affichés."
 
 msgid "The document cannot be displayed."
 msgstr "Le document ne peut pas être affiché."
 
+msgid "The text version cannot be loaded."
+msgstr "La version texte ne peut pas être chargée."
+
 msgid "Toolbar buttons"
 msgstr "Boutons de la barre d'outils"
+
+msgid "Try again"
+msgstr "Réessayer"
 
 msgid "Zoom"
 msgstr "Zoom"
