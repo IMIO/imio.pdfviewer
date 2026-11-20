@@ -6,7 +6,6 @@ const LEVELS = [25, 33, 50, 67, 75, 90, 100, 110, 125, 150, 175, 200, 250, 300, 
 
 const button = (label) => cy.get(`.pdf-viewer [aria-label="${label}"]`);
 const pageCount = () => cy.get(".pdf-viewer-page-count [aria-hidden]");
-const zoomLevel = () => cy.get(".pdf-viewer-zoom-level");
 const viewport = () => cy.get(".pdf-viewer-viewport");
 const firstPage = () => cy.get(".pdf-viewer-page").first();
 
@@ -74,12 +73,15 @@ describe("pat-pdf-viewer", () => {
     it("zooms to the next level from the size on the screen", () => {
         cy.visitViewer();
         cy.get(".pdf-viewer canvas").should("be.visible");
-        zoomLevel().then(($level) => {
-            const fit = parseInt($level.text(), 10);
-            const next = LEVELS.find((level) => level > fit + 1);
-            button("Zoom in").click();
-            zoomLevel().should("have.text", `${next}%`);
-        });
+        firstPage()
+            .invoke("outerWidth")
+            .then((width) => {
+                // The pages of sample.pdf are 595 points wide. At 100 %, a point is a pixel.
+                const fit = (width / 595) * 100;
+                const next = LEVELS.find((level) => level > fit + 1);
+                button("Zoom in").click();
+                firstPage().invoke("outerWidth").should("be.closeTo", (next / 100) * 595, 2);
+            });
     });
 
     it("switches between fit to width and fit to page", () => {
@@ -102,11 +104,11 @@ describe("pat-pdf-viewer", () => {
     it("zooms with the keyboard", () => {
         cy.visitViewer();
         cy.get(".pdf-viewer canvas").should("be.visible");
-        zoomLevel()
-            .invoke("text")
+        firstPage()
+            .invoke("outerWidth")
             .then((before) => {
                 viewport().focus().type("+");
-                zoomLevel().invoke("text").should("not.equal", before);
+                firstPage().invoke("outerWidth").should("be.greaterThan", before);
             });
     });
 
@@ -143,14 +145,14 @@ describe("pat-pdf-viewer", () => {
             { identifier: 1, clientX: 400 - spread, clientY: 400 },
             { identifier: 2, clientX: 400 + spread, clientY: 400 },
         ];
-        zoomLevel()
-            .invoke("text")
+        firstPage()
+            .invoke("outerWidth")
             .then((before) => {
                 viewport()
                     .trigger("touchstart", { touches: fingers(50) })
                     .trigger("touchmove", { touches: fingers(100) })
                     .trigger("touchend", { touches: [], changedTouches: fingers(100) });
-                zoomLevel().invoke("text").should("not.equal", before);
+                firstPage().invoke("outerWidth").should("be.greaterThan", before);
             });
     });
 
