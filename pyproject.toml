@@ -87,6 +87,9 @@ namespaces = true
     "*.map",
     "*.mjs",
     "*.svg",
+    "*.po",
+    "*.pot",
+    "*.mo",
 ]
 
 [tool.towncrier]
