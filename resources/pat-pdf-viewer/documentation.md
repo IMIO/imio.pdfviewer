@@ -27,7 +27,8 @@ Give the URL of the PDF in a child link (preferred) or in the `url` option.
 
 The `url` option has priority over the child link. Without a URL, the pattern
 logs a warning and does nothing. The viewer replaces the content of the
-element. In a browser that cannot run the viewer, the child link stays.
+element. In a browser that cannot run the viewer, a frame explains the
+problem and gives a button to download the PDF.
 
 The PDF must be on the same origin as the page, or the server must send CORS
 headers: pdf.js downloads it with `fetch`.

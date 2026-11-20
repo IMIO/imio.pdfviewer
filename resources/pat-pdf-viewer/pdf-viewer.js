@@ -2,8 +2,10 @@ import { BasePattern } from "@patternslib/patternslib/src/core/basepattern";
 import Parser from "@patternslib/patternslib/src/core/parser";
 import registry from "@patternslib/patternslib/src/core/registry";
 import logging from "@patternslib/patternslib/src/core/logging";
+import { renderFallback } from "./fallback";
 import { loadTranslations } from "./i18n";
 import { readSiteSettings, resolveOptions } from "./settings";
+import { isSupported } from "./supported";
 
 const log = logging.getLogger("pdf-viewer");
 
@@ -34,17 +36,32 @@ class Pattern extends BasePattern {
         // The options of the element replace the site settings.
         const options = resolveOptions(readSiteSettings(), this.options);
 
+        // The catalog loads while the viewer code loads.
+        const translations = loadTranslations();
+        // A browser that cannot show the PDF gets a frame with a download button.
+        const showFallback = async () => {
+            const t = await translations;
+            if (!this.#destroyed) {
+                renderFallback(this.el, { file: url, t });
+            }
+        };
+        if (!isSupported()) {
+            await showFallback();
+            return;
+        }
+
         let modules;
         try {
             modules = await Promise.all([
                 import("react-dom/client"),
                 import("react"),
                 import("./PdfViewer.jsx"),
-                loadTranslations(),
+                translations,
             ]);
         } catch (error) {
-            // An old browser cannot load the viewer. The child link stays.
+            // An old browser can fail to load the viewer code.
             log.error("Cannot load the PDF viewer.", error);
+            await showFallback();
             return;
         }
         // destroy() can run while the modules and the catalog load.

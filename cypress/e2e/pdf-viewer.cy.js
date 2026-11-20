@@ -188,6 +188,21 @@ describe("pat-pdf-viewer", () => {
             });
     });
 
+    it("shows a download frame in a browser that cannot show the viewer", () => {
+        const pdf = `${Cypress.config("baseUrl")}/sample.pdf/@@download/file`;
+        cy.visit(`/@@pdfviewer-demo?${new URLSearchParams({ url: pdf })}`, {
+            onBeforeLoad(win) {
+                // The viewer needs structuredClone.
+                delete win.structuredClone;
+            },
+        });
+        cy.get(".pdf-viewer-fallback")
+            .should("be.visible")
+            .and("contain.text", "Your browser cannot show this document");
+        cy.get(".pdf-viewer-fallback-download").should("have.attr", "href", pdf);
+        cy.get(".pdf-viewer").should("not.exist");
+    });
+
     describe("site settings", () => {
         const ALL_BUTTONS = ["download", "print", "rotate", "fit", "zoom", "fullscreen"];
 

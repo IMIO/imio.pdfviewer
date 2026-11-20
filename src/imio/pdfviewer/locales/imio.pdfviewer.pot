@@ -94,3 +94,12 @@ msgstr ""
 
 msgid "Zoom out"
 msgstr ""
+
+msgid "Download it to read it with a PDF reader."
+msgstr ""
+
+msgid "Download it to read it with a PDF reader. A recent version of Chrome, Edge, Firefox or Safari shows it here."
+msgstr ""
+
+msgid "Your browser cannot show this document"
+msgstr ""

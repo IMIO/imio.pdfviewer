@@ -95,3 +95,12 @@ msgstr "Zoomer"
 
 msgid "Zoom out"
 msgstr "Dézoomer"
+
+msgid "Download it to read it with a PDF reader."
+msgstr "Téléchargez-le pour le lire avec un lecteur PDF."
+
+msgid "Download it to read it with a PDF reader. A recent version of Chrome, Edge, Firefox or Safari shows it here."
+msgstr "Téléchargez-le pour le lire avec un lecteur PDF. Une version récente de Chrome, Edge, Firefox ou Safari l'affiche directement ici."
+
+msgid "Your browser cannot show this document"
+msgstr "Votre navigateur ne peut pas afficher ce document"

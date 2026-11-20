@@ -3,6 +3,7 @@ import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { PDFJS_OPTIONS, SPINNER_URL, WORKER_SRC } from "./assets";
+import Icon from "./Icon";
 import Pages from "./Pages";
 import Toolbar from "./Toolbar";
 import { useBoxSize } from "./useBoxSize";
@@ -44,11 +45,23 @@ const sizeGroups = (numPages) => {
     return groups;
 };
 
+// The same frame as fallback.js, for a PDF that cannot load.
 const ErrorMessage = ({ file, t }) => (
-    <p className="pdf-viewer-error" role="alert">
-        {t("The document cannot be displayed.")}{" "}
-        <a href={file}>{t("Download the document")}</a>
-    </p>
+    <div className="pdf-viewer-fallback" role="alert">
+        <span className="pdf-viewer-fallback-icon" aria-hidden="true">
+            <Icon name="file-earmark-pdf" />
+        </span>
+        <div className="pdf-viewer-fallback-body">
+            <p className="pdf-viewer-fallback-title">{t("The document cannot be displayed.")}</p>
+            <p className="pdf-viewer-fallback-text">
+                {t("Download it to read it with a PDF reader.")}
+            </p>
+            <a className="pdf-viewer-fallback-download" href={file} target="_blank" rel="noopener">
+                <Icon name="download" />
+                <span className="pdf-viewer-fallback-label">{t("Download the document")}</span>
+            </a>
+        </div>
+    </div>
 );
 
 const PdfViewer = ({ file, display = "continuous", buttons = [], t = identity }) => {

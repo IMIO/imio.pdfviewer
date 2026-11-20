@@ -55,6 +55,8 @@ simplest way is to set these custom properties on `.pdf-viewer`:
 | `--pdf-viewer-page-shadow` | Shadow of a page. |
 | `--pdf-viewer-page-radius` | Corner radius of a page. |
 | `--pdf-viewer-fullscreen-z-index` | Stack level of the full screen when the browser refuses the Fullscreen API. |
+| `--pdf-viewer-download-bg` | Background of the download button in the fallback frame. |
+| `--pdf-viewer-download-color` | Text color of that button. |
 
 Bootstrap styles all links and buttons outside a layer. So the color, the
 underline and the corners of the toolbar buttons are set outside the layer
@@ -76,7 +78,10 @@ catalog.
 ## Browser support
 
 pdf.js comes from its legacy build: Safari 18 (iOS 18), Chrome 125 and
-later. An older browser keeps the download link.
+later. The pattern checks a few features first. A browser without them,
+or a browser that cannot load the viewer code, gets a frame that explains
+the problem, with a button to download the PDF. A PDF that cannot load
+gets the same frame.
 
 ## Why Module Federation
 

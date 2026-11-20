@@ -29,6 +29,7 @@ jest.mock("react-pdf", () => {
     };
 });
 jest.mock("print-js-updated", () => jest.fn());
+jest.mock("./supported", () => ({ isSupported: () => true }));
 
 // The ResizeObserver stub of @patternslib/dev has no disconnect method.
 global.ResizeObserver = class {
