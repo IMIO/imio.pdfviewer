@@ -2,6 +2,7 @@ import { BasePattern } from "@patternslib/patternslib/src/core/basepattern";
 import Parser from "@patternslib/patternslib/src/core/parser";
 import registry from "@patternslib/patternslib/src/core/registry";
 import logging from "@patternslib/patternslib/src/core/logging";
+import { loadTranslations } from "./i18n";
 import { readSiteSettings, resolveOptions } from "./settings";
 
 const log = logging.getLogger("pdf-viewer");
@@ -37,16 +38,17 @@ class Pattern extends BasePattern {
                 import("react-dom/client"),
                 import("react"),
                 import("./PdfViewer.jsx"),
+                loadTranslations(),
             ]);
         } catch (error) {
             // An old browser cannot load the viewer. The child link stays.
             log.error("Cannot load the PDF viewer.", error);
             return;
         }
-        const [{ createRoot }, { createElement }, { default: PdfViewer }] = modules;
+        const [{ createRoot }, { createElement }, { default: PdfViewer }, t] = modules;
         // The React root replaces the fallback link.
         this.root = createRoot(this.el);
-        this.root.render(createElement(PdfViewer, { file: url, ...options }));
+        this.root.render(createElement(PdfViewer, { file: url, t, ...options }));
     }
 
     destroy() {
