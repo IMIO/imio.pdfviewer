@@ -1,13 +1,14 @@
 import { useLayoutEffect, useState } from "react";
 
+// A CSS length in pixels. A value that is not a number gives 0.
+const px = (value) => parseFloat(value) || 0;
+
 // Size of the content box of an element: without padding and scroll bar.
 const measure = (el) => {
     const style = getComputedStyle(el);
     return {
-        width:
-            el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-        height:
-            el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+        width: el.clientWidth - px(style.paddingLeft) - px(style.paddingRight),
+        height: el.clientHeight - px(style.paddingTop) - px(style.paddingBottom),
     };
 };
 
