@@ -8,3 +8,10 @@
 -->
 
 <!-- towncrier release notes start -->
+
+## 1.0.0 (2026-11-20)
+
+
+### New features:
+
+- Add the `pat-pdf-viewer` pattern, a PDF viewer for Plone Classic UI built with React and react-pdf: continuous or single-page display, fit to width or to page, zoom, rotation, print, download, full screen, pinch zoom on touch screens, selectable text and clickable links. A control panel holds the site defaults. French translations. pdf.js and its worker load from the site. @duchenean
